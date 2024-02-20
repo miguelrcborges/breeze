@@ -1,4 +1,4 @@
-LINKS="-lkernel32"
+LINKS="-lkernel32 -luser32"
 
 if [ -z "$CC" ]
 then
@@ -10,6 +10,6 @@ then
 	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1"
 fi
 
-CFLAGS="$CFLAGS -ffreestanding -Ideps/lib"
+CFLAGS="$CFLAGS -ffreestanding -nostdlib -Ideps/lib"
 
 $CC $LINKS $CFLAGS src/*.c -o breeze.exe
