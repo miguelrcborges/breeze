@@ -49,13 +49,8 @@ void CaptureScreenshot() {
 }
 
 
-int CALLBACK WinMain(
-	HINSTANCE Instance,
-	HINSTANCE PrevInstance,
-	LPSTR CmdLine,
-	int ShowCmd
-) {
-
+int WinMainCRTStartup(void) {
+	HINSTANCE Instance = GetModuleHandleW(NULL);
 	HWND Existing = FindWindow(className, NULL);
 	if (Existing) {
 		MessageBoxA(NULL, "You're already trying to take a screenshot.", "Error", MB_OK | MB_ICONWARNING);
