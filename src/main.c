@@ -90,6 +90,8 @@ static bool __stdcall updateWorkArea(usize mon, usize param1, void *rect, void *
 usize stderr;
 usize hotkeys_count = 0;
 Hotkeys *hotkeys = NULL;
+Arena stable;
+Arena temp;
 
 int mainCRTStartup(void) {
 	stderr = getStdErr();
