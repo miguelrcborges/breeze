@@ -19,6 +19,7 @@ static usize cursor;
 static usize line;
 static string config;
 static bool has_error;
+static HotkeysList *lhotkeys;
 
 static bool peek() {
 	if (cursor > config.len) {
@@ -51,9 +52,11 @@ static void readFile() {
 	}
 
 	if (len >= config.len) {
-		if (unlikely(mem_release((void *)config.str, config.len))) {
-			io_write(stderr, string("Failed to free memory.\n"));
-			ExitProcess(-1);
+		if (unlikely(config.str != NULL)) {
+			if (unlikely(mem_release((void *)config.str, config.len))) {
+				io_write(stderr, string("Failed to free memory.\n"));
+				ExitProcess(-1);
+			}
 		}
 
 		config.len = len;
@@ -103,7 +106,78 @@ static void ignoreScope() {
 	}
 }
 
-bool loadConfig(void) {
+static void parseNoargsAction(string action, void (*fun)(void*)) {
+	skipWhitespace();
+	if (peek() != '{') {
+		io_write(stderr, string("No scope created after action \""));
+		io_write(stderr, action);
+		io_write(stderr, string("\" at line ##.\n"));
+	}
+
+	ArenaState as = Arena_saveState(&temp);
+	HotkeysList *n = unwrap(Arena_alloc(&temp, sizeof(*n), 8));
+	n->key = 0;
+	n->modifider = 0;
+	n->action.arg = 0;
+	n->action.fun = fun;
+
+	while (cursor <= config.len) {
+		skipWhitespace();
+
+		u8 ch = peek();
+		if (unlikely(ch == '\0' || ch == '}')) {
+			break;
+		} else if (!isAlpha(ch)) {
+			io_write(stderr, string("Invalid character in action \""));
+			io_write(stderr, action);
+			io_write(stderr, string("\" at line ##."));
+			has_error = 1;
+		} else {
+			usize start = cursor;
+			do {
+				++cursor;
+			} while (isAlpha(peek()));
+			string parameter = (string) {
+				.str = config.str + start,
+				.len = cursor - start
+			};
+
+			switch (action.str[0]) {
+				case 'm': {
+					if (string_compare(parameter, string("modifiers"))) {
+						ignoreScope();
+					} else {
+						goto unknown;
+					}
+					break;
+				}
+				case 'k': {
+					if (string_compare(parameter, string("key"))) {
+						ignoreScope();
+					} else {
+						goto unknown;
+					}
+					break;
+				}
+				default:
+				unknown: {
+					io_write(stderr, string("Unkown parameter named \""));
+					io_write(stderr, parameter);
+					io_write(stderr, string("\" in action \""));
+					io_write(stderr, action);
+					io_write(stderr, string("\" present at line ##.\n"));
+					has_error = 1;
+					ignoreScope();
+				}
+			}
+		}
+
+		++cursor;
+	}
+}
+
+
+bool loadConfig(void *_) {
 	has_error = 0;
 	line = 1;
 
@@ -142,12 +216,28 @@ bool loadConfig(void) {
 					}
 					break;
 				}
+				case 'r': {
+					if (string_compare(action, string("reload"))) {
+						ignoreScope();
+					} else {
+						goto unknown;
+					}
+					break;
+				}
+				case 'q': {
+					if (string_compare(action, string("quit"))) {
+						ignoreScope();
+					} else {
+						goto unknown;
+					}
+					break;
+				}
 				default:
 				unknown: {
 					// I really need to implement formatting
 					io_write(stderr, string("Unkown action named \""));
 					io_write(stderr, action);
-					io_write(stderr, string("\" present in line ##.\n"));
+					io_write(stderr, string("\" present at line ##.\n"));
 					has_error = 1;
 					ignoreScope();
 				}

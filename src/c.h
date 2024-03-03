@@ -8,10 +8,16 @@ typedef struct {
 } Hotkeys;
 
 
+/* action */
+void spawn(void *arg);
+void quit(void *arg);
+
 /* cofig.c */
-bool loadConfig(void);
+bool loadConfig(void *_);
 
 /* main.c */
 extern usize hotkeys_count;
 extern Hotkeys *hotkeys;
 extern usize stderr;
+extern Arena stable;
+extern Arena temp;
