@@ -5,6 +5,7 @@ w32(void) ExitProcess(u32 code);
 w32(usize) CreateFileA(u8 *fname, u32 flags, u32 shared, void *sec, u64 modes, u64 attributes, int);
 w32(u32) GetFileSize(usize fd, u32 *high);
 w32(bool) ReadFile(usize fd, const u8 *buffer, u32 len, u32 *written, void *overlapped);
+w32(bool) CloseHandle(usize handle);
 
 typedef struct hotkeyList HotkeysList;
 struct hotkeyList {
@@ -15,7 +16,7 @@ struct hotkeyList {
 };
 
 static usize cursor;
-static usize line = 1;
+static usize line;
 static string config;
 static bool has_error;
 
@@ -31,7 +32,7 @@ static bool isAlpha(u8 ch) {
 }
 
 static bool isWhiteSpace(u8 ch) {
-	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
+	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '\f' || ch == '\v';
 }
 
 static void readFile() {
@@ -69,9 +70,11 @@ static void readFile() {
 		io_write(stderr, string("Failed to read file.\n"));
 		ExitProcess(-1);
 	};
+
+	CloseHandle(fd);
 }
 
-void skipWhitespace() {
+static void skipWhitespace() {
 	u8 ch;
 	while (isWhiteSpace(ch = peek())) {
 		if (ch == '\n')
@@ -80,8 +83,29 @@ void skipWhitespace() {
 	}
 }
 
+static void ignoreScope() {
+	u8 ch;
+
+	skipWhitespace();
+	ch = peek();
+	if (ch == '{') {
+		do {
+			++cursor;
+			ch = peek();
+		} while (ch != '}' && ch != '\0');
+
+		if (ch == '\0') {
+			io_write(stderr, string("Unfinished scope at end of file.\n"));
+			has_error = 1;
+		} else {
+			++cursor;
+		}
+	}
+}
+
 bool loadConfig(void) {
 	has_error = 0;
+	line = 1;
 
 	for (usize i = 0; i < hotkeys_count; ++i) {
 		UnregisterHotKey(0, (i32) i);
@@ -96,13 +120,41 @@ bool loadConfig(void) {
 		if (unlikely(ch == '\0')) {
 			break;
 		} else if (!isAlpha(ch)) {
+			// Need to implement string formatting in my lib
 			io_write(stderr, string("Invalid character in an action position at line ##\n"));
-			io_write(stderr, (string) {.str = config.str + cursor, .len = 1});
-			io_write(stderr, string("\n"));
 			has_error = 1;
+		} else {
+			usize start = cursor;
+			do {
+				++cursor;
+			} while (isAlpha(peek()));
+			string action = (string) {
+				.str = config.str + start,
+				.len = cursor - start
+			};
+
+			switch (action.str[0]) {
+				case 's': {
+					if (string_compare(action, string("spawn"))) {
+						ignoreScope();
+					} else {
+						goto unknown;
+					}
+					break;
+				}
+				default:
+				unknown: {
+					// I really need to implement formatting
+					io_write(stderr, string("Unkown action named \""));
+					io_write(stderr, action);
+					io_write(stderr, string("\" present in line ##.\n"));
+					has_error = 1;
+					ignoreScope();
+				}
+			}
 		}
 
-		cursor++;
+		++cursor;
 	}
 
 	return has_error;
