@@ -29,7 +29,7 @@ typedef struct {
 } ProcessInformation;
 
 w32(i32) CreateProcessW(u16 *exe, u16 *cmdline, void *pAttr, void *tAttr, u32 inherit, u32 flags, void *env, char *dir, StartupInfo *startupInfo, void *procInfo);
-w32(bool) CloseHandle(usize handle);
+w32(i32) CloseHandle(usize handle);
 w32(void) ExitProcess(u32 code);
 
 void spawn(void *arg) {
@@ -50,4 +50,9 @@ void quit(void *arg) {
 	u16 explorer[] = L"explorer.exe";
 	spawn(explorer);
 	ExitProcess(code);
+}
+
+void reloadConfig(void *arg) {
+	if (loadConfig())
+		loadDefaultConfig();
 }

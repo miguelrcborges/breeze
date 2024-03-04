@@ -30,13 +30,13 @@ w32(usize) CreateToolhelp32Snapshot(u64 flags, u64 PID);
 w32(bool) Process32First(u64 snapshot, ProcessEntry32 *p);
 w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
 w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
-w32(bool) CloseHandle(usize handle);
+w32(i32) CloseHandle(usize handle);
 w32(usize) OpenProcess(u64 access, bool inherit, u64 PID);
-w32(bool) TerminateProcess(usize handle, u32 code);
-w32(bool) SystemParametersInfoW(u32 action, u32 param, void *vparam, u32 ini);
-w32(bool) EnumDisplayMonitors(usize handle, void *rect, bool (*enumProc)(usize mon, usize param1, void *rect, void *lparam), u32 data);
-w32(bool) RegisterHotKey(usize handle, i32 id, u32 mod, u32 keycode);
-w32(bool) GetMessageW(Message *msg, usize handle, u32 filterMin, u32 filterMax);
+w32(i32) TerminateProcess(usize handle, u32 code);
+w32(i32) SystemParametersInfoW(u32 action, u32 param, void *vparam, u32 ini);
+w32(i32) EnumDisplayMonitors(usize handle, void *rect, i32 (*enumProc)(usize mon, usize param1, void *rect, void *lparam), u32 data);
+w32(i32) RegisterHotKey(usize handle, i32 id, u32 mod, u32 keycode);
+w32(i32) GetMessageW(Message *msg, usize handle, u32 filterMin, u32 filterMax);
 w32(void) ExitProcess(u32 code);
 
 static const char *processesToKill[] = {
@@ -82,12 +82,13 @@ static void killProcesses(void) {
 	}
 }
 
-static bool __stdcall updateWorkArea(usize mon, usize param1, void *rect, void *lparam) {
+static i32 __stdcall updateWorkArea(usize mon, usize param1, void *rect, void *lparam) {
 	SystemParametersInfoW(0x2F, 0, rect, 1);
 	return 1;
 }
 
 usize stderr;
+usize stdout;
 usize hotkeys_count = 0;
 Hotkeys *hotkeys = NULL;
 Arena stable;
@@ -95,10 +96,11 @@ Arena temp;
 
 int mainCRTStartup(void) {
 	stderr = getStdErr();
+	stdout = getStdOut();
 	stable = Arena_create(0);
 	temp = Arena_create(0);
-	if (loadConfig(0))
-		ExitProcess(-1);
+	if (loadConfig())
+		loadDefaultConfig();
 
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);

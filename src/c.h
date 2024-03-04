@@ -1,7 +1,5 @@
 #include "lib.h"
 
-w32(bool) UnregisterHotKey(usize handle, i32 id);
-
 typedef struct {
 	void (*fun)(void *arg);
 	void *arg;
@@ -11,13 +9,16 @@ typedef struct {
 /* action */
 void spawn(void *arg);
 void quit(void *arg);
+void reloadConfig(void *arg);
 
-/* cofig.c */
-bool loadConfig(void *_);
+/* config.c */
+bool loadConfig(void);
+void loadDefaultConfig(void);
 
 /* main.c */
 extern usize hotkeys_count;
 extern Hotkeys *hotkeys;
 extern usize stderr;
+extern usize stdout;
 extern Arena stable;
 extern Arena temp;

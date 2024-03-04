@@ -1,11 +1,12 @@
 #include "c.h"
 
-w32(bool) UnregisterHotKey(usize handle, i32 id);
+w32(i32) RegisterHotKey(usize handle, i32 id, u32 mod, u32 key);
+w32(i32) UnregisterHotKey(usize handle, i32 id);
 w32(void) ExitProcess(u32 code);
 w32(usize) CreateFileA(u8 *fname, u32 flags, u32 shared, void *sec, u64 modes, u64 attributes, int);
 w32(u32) GetFileSize(usize fd, u32 *high);
 w32(bool) ReadFile(usize fd, const u8 *buffer, u32 len, u32 *written, void *overlapped);
-w32(bool) CloseHandle(usize handle);
+w32(i32) CloseHandle(usize handle);
 
 typedef struct hotkeyList HotkeysList;
 struct hotkeyList {
@@ -20,6 +21,32 @@ static usize line;
 static string config;
 static bool has_error;
 static HotkeysList *lhotkeys;
+
+static u16 explorer[] = L"C:\\Windows\\explorer.exe file:";
+static Hotkeys defaultHotkeys[] = {
+	{
+		.fun = spawn,
+		.arg = explorer
+	},
+	{
+		.fun = reloadConfig,
+		.arg = NULL
+	},
+	{
+		.fun = quit,
+		.arg = NULL
+	}
+};
+
+void loadDefaultConfig(void) {
+	io_write(stdout, string("Loading default config.\n"));
+	RegisterHotKey(0, 0, 8, 'E');
+	RegisterHotKey(0, 1, 8 | 4, 'R');
+	RegisterHotKey(0, 2, 8 | 4 | 2, 'Q');
+
+	hotkeys = defaultHotkeys;
+	hotkeys_count = len(defaultHotkeys);
+}
 
 static bool peek() {
 	if (cursor > config.len) {
@@ -36,11 +63,10 @@ static bool isWhiteSpace(u8 ch) {
 	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '\f' || ch == '\v';
 }
 
-static void readFile() {
+static bool readFile() {
 	usize fd = CreateFileA((u8 *)"./breeze.conf", 1179785, 0, 0, 3, 128, 0);
 	if (unlikely(fd == (usize) -1)) {
-		io_write(stderr, string("Failed to open configuration file.\n"));
-		return;
+		return 1;
 	}
 	
 	u32 hw;
@@ -75,6 +101,8 @@ static void readFile() {
 	};
 
 	CloseHandle(fd);
+	
+	return 0;
 }
 
 static void skipWhitespace() {
@@ -177,7 +205,7 @@ static void parseNoargsAction(string action, void (*fun)(void*)) {
 }
 
 
-bool loadConfig(void *_) {
+bool loadConfig(void) {
 	has_error = 0;
 	line = 1;
 
@@ -185,7 +213,10 @@ bool loadConfig(void *_) {
 		UnregisterHotKey(0, (i32) i);
 	}
 
-	readFile();
+	if (readFile()) {
+		return 1;
+	};
+
 	cursor = 0;
 	while (cursor <= config.len) {
 		skipWhitespace();
