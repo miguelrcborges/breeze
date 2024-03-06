@@ -11,7 +11,7 @@ void spawn(void *arg);
 void quit(void *arg);
 void reloadConfig(void *arg);
 
-/* config.c */
+/* config */
 bool loadConfig(void);
 void loadDefaultConfig(void);
 

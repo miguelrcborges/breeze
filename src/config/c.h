@@ -29,3 +29,7 @@ typedef struct {
 	string string;
 	Token token;
 } TokenData;
+
+
+/* map.c */
+Token getToken(string s);

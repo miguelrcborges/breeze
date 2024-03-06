@@ -12,4 +12,4 @@ fi
 
 CFLAGS="$CFLAGS -ffreestanding -nostdlib -Ideps/lib"
 
-$CC $LINKS $CFLAGS src/*.c deps/lib/src/win32/io.c deps/lib/src/win32/mem.c deps/lib/src/mem.c deps/lib/src/str.c deps/lib/src/win32/chkstk.S -o breeze.exe
+$CC $LINKS $CFLAGS src/*.c src/config/*.c deps/lib/src/win32/io.c deps/lib/src/win32/mem.c deps/lib/src/mem.c deps/lib/src/str.c deps/lib/src/win32/chkstk.S -o breeze.exe
