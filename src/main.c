@@ -99,8 +99,8 @@ int mainCRTStartup(void) {
 	stdout = getStdOut();
 	stable = Arena_create(0);
 	temp = Arena_create(0);
-	if (loadConfig())
-		loadDefaultConfig();
+	// if (loadConfig())
+	// 	loadDefaultConfig();
 
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);
