@@ -90,7 +90,7 @@ static i32 __stdcall updateWorkArea(usize mon, usize param1, void *rect, void *l
 usize stderr;
 usize stdout;
 usize hotkeys_count = 0;
-Hotkeys *hotkeys = NULL;
+Hotkey *hotkeys = NULL;
 Arena stable;
 Arena temp;
 

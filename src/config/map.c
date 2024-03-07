@@ -792,21 +792,22 @@ static TokenData *hashtable[] = {
 	NULL
 };
 
-static usize hash(string s) {
-	usize h = 226;
+static u16 hash(string s) {
+	u16 h = 226;
 	for (usize i = 0; i < s.len; ++i) {
 		h = h * 148 + s.str[i];
 	}
 	return h;
 }
 
-Token getToken(string s) {
-	usize h = hash(s);
+Token getToken(string *s) {
+	u16 h = hash(*s);
 	h = h & (hashtable_size - 1);
-	if (hashtable[h] && string_equal(s, hashtable[h]->string)) {
+	if (hashtable[h] && string_equal(*s, hashtable[h]->string)) {
 		return hashtable[h]->token;
 	}
 	return (Token) {
-		.type = TOKEN_INVALID 
+		.type = TOKEN_INVALID,
+		.value = (uptr) s
 	};
 }

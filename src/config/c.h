@@ -3,16 +3,19 @@
 typedef u8 TOKEN_TYPE;
 enum _TOKEN_TYPE {
 	TOKEN_INVALID,
+	TOKEN_EOF,
+	TOKEN_UNTERMINATED_STRING,
 	TOKEN_LBRACE,
 	TOKEN_RBRACE,
 	TOKEN_PLUS,
 	TOKEN_ACTION,
 	TOKEN_KEY,
 	TOKEN_STRING,
-	TOKEN_MODIFIER
+	TOKEN_MODIFIER,
+	TOKEN_COUNT
 };
 
-typedef u32 TOKEN_VALUE;
+typedef uptr TOKEN_VALUE;
 enum TOKEN_ACTION_VALUES {
 	ACTION_SPAWN,
 	ACTION_RELOAD,
@@ -30,6 +33,24 @@ typedef struct {
 	Token token;
 } TokenData;
 
+typedef struct {
+	string string;
+	usize pos;
+	usize line;
+} Lexer;
+
+typedef struct hotkeyList *HotkeyList;
+struct hotkeyList {
+	Hotkey hk;
+	HotkeyList link;
+};
+
+/* lex.c */
+Lexer Lexer_create(string source);
+Token Lexer_nextToken(Lexer *lex);
 
 /* map.c */
-Token getToken(string s);
+Token getToken(string *s);
+
+/* parser.c */
+HotkeyList parse(Lexer lex);

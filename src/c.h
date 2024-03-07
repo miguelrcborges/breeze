@@ -3,7 +3,7 @@
 typedef struct {
 	void (*fun)(void *arg);
 	void *arg;
-} Hotkeys;
+} Hotkey;
 
 
 /* action */
@@ -17,7 +17,7 @@ void loadDefaultConfig(void);
 
 /* main.c */
 extern usize hotkeys_count;
-extern Hotkeys *hotkeys;
+extern Hotkey *hotkeys;
 extern usize stderr;
 extern usize stdout;
 extern Arena stable;

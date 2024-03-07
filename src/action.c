@@ -54,6 +54,7 @@ void quit(void *arg) {
 }
 
 void reloadConfig(void *arg) {
+	Arena_free(&stable);
 	if (loadConfig())
 		loadDefaultConfig();
 }

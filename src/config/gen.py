@@ -28,8 +28,7 @@ for _ in range(MAX_ATTEMPTS):
     for w in tokens:
         hash = offset
         for l in w[0]:
-            hash = ((hash * coef) + ord(l)) & overflow_limit
-        hash = hash & bits
+            hash = ((hash * coef) + ord(l)) & bits
         if hash in obtained_hashes:
             is_perfect = False
             break
@@ -74,22 +73,23 @@ for i in range(hashtable_len):
 
 f.write("""};
 
-static usize hash(string s) {
-\tusize h = %d;
+static u16 hash(string s) {
+\tu16 h = %d;
 \tfor (usize i = 0; i < s.len; ++i) {
 \t\th = h * %d + s.str[i];
 \t}
 \treturn h;
 }
 
-Token getToken(string s) {
-\tusize h = hash(s);
+Token getToken(string *s) {
+\tu16 h = hash(*s);
 \th = h & (hashtable_size - 1);
-\tif (hashtable[h] && string_equal(s, hashtable[h]->string)) {
+\tif (hashtable[h] && string_equal(*s, hashtable[h]->string)) {
 \t\treturn hashtable[h]->token;
 \t}
 \treturn (Token) {
-\t\t.type = TOKEN_INVALID 
+\t\t.type = TOKEN_INVALID,
+\t\t.value = (uptr) s
 \t};
 }
 """ % (offset, coef))

@@ -1,11 +1,12 @@
 #include "c.h"
+#include "lib.h"
 
 w32(i32) RegisterHotKey(usize handle, i32 id, u32 mods, u32 code);
 w32(i32) UnregisterHotKey(usize handle, i32 id);
 
 u16 explorer[] = L"C:\\Windows\\explorer.exe file:";
 
-static Hotkeys defaultAction[] = {
+static Hotkey defaultAction[] = {
 	{
 		.fun = spawn,
 		.arg = explorer
@@ -39,6 +40,12 @@ static struct {
 };
 
 bool loadConfig(void) {
+	string content;
+	if (io_readFile(&temp, string("breeze.conf"), &content)) {
+		return 1;
+	}
+	Lexer lex = Lexer_create(content);
+	Arena_free(&temp);
 	return 1;
 }
 
@@ -55,10 +62,10 @@ void loadDefaultConfig() {
 				io_write(stderr, string("Failed to set a hotkey.\n"));
 				continue;
 			}
-			io_write(stderr, string_build(&stable, string("Failed to set keybind no. "), number, string(".\n")));
+			io_write(stderr, string_build(&temp, string("Failed to set keybind no. "), number, string(".\n")));
 		}
 	}
 	hotkeys = defaultAction;
 	hotkeys_count = len(defaultKeys);
-	Arena_free(&stable);
+	Arena_free(&temp);
 }
