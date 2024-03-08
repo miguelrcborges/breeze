@@ -11,7 +11,9 @@ static string tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_LBRACE] = string("left brace"),
 	[TOKEN_RBRACE] = string("right brace"),
 	[TOKEN_PLUS] = string("+ operator"),
+	[TOKEN_EQUAL] = string("= operator"),
 	[TOKEN_ACTION] = string("action"),
+	[TOKEN_ATTRIBUTE] = string("action attribute"),
 	[TOKEN_KEY] = string("key token"),
 	[TOKEN_STRING] = string("string"),
 	[TOKEN_MODIFIER] = string("modifier token")
