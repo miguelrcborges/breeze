@@ -45,6 +45,10 @@ bool loadConfig(void) {
 		return 1;
 	}
 	Lexer lex = Lexer_create(content);
+	HotkeyList hkl = parse(&lex);
+	if (hkl == NULL) {
+		return 1;
+	}
 	Arena_free(&temp);
 	return 1;
 }

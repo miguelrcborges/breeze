@@ -8,10 +8,12 @@ enum _TOKEN_TYPE {
 	TOKEN_LBRACE,
 	TOKEN_RBRACE,
 	TOKEN_PLUS,
+	TOKEN_EQUAL,
 	TOKEN_ACTION,
+	TOKEN_ATTRIBUTE,
 	TOKEN_KEY,
-	TOKEN_STRING,
 	TOKEN_MODIFIER,
+	TOKEN_STRING,
 	TOKEN_COUNT
 };
 
@@ -53,4 +55,4 @@ Token Lexer_nextToken(Lexer *lex);
 Token getToken(string *s);
 
 /* parser.c */
-HotkeyList parse(Lexer lex);
+HotkeyList parse(Lexer *lex);

@@ -15,20 +15,24 @@ static bool isAlphanumerical(u8 ch) {
 }
 
 static void skipIgnore(Lexer *lex) {
-	u8 *p = (u8 *)lex->string.str;
-	usize *i = &(lex->pos);
-	usize len = lex->string.len;
-	
-	while (*i < len && 
-		(p[*i] == '\n' || p[*i] == '\t' || p[*i] == ' ' || p[*i] == '\t' || p[*i] == '\f' 
-		|| p[*i] == ',' || p[*i] == ';')
-	) {
-		if (p[*i] == '\n')
+	static bool skipTable[(1 << 8) - 1] = {
+		['\r'] = 1,
+		['\n'] = 1,
+		['\t'] = 1,
+		[' ']  = 1,
+		['\f'] = 1,
+		['\v'] = 1,
+		[',']  = 1,
+		[';']  = 1,
+	};
+
+	u8 ch;
+	while (skipTable[(ch = lread(lex))]) {
+		if (ch == '\n')
 			lex->line++;
-		(*i)++;
+		lex->pos++;
 	}
 }
-
 
 Lexer Lexer_create(string source) {
 	return (Lexer) {
@@ -41,20 +45,13 @@ Lexer Lexer_create(string source) {
 Token Lexer_nextToken(Lexer *lex) {
 	skipIgnore(lex);
 	u8 ch = lread(lex);
-	if (isAlphanumerical(ch)) {
-		string *w = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
-		usize s = lex->pos;
-		w->str = lex->string.str + lex->pos;
-		do {
-			++lex->pos;
-		} while (isAlphanumerical(lread(lex)));
-		w->len = lex->pos - s;
-		return getToken(w);
-	} else if (ch == '\'') {
+	if (ch == '\'') {
 		usize s = lex->pos;
 		do {
-			++lex->pos;
+			lex->pos++;
 			ch = lread(lex);
+			if (ch == '\n')
+				lex->line++;
 		} while (ch != '\'' && ch != '\0');
 		if (ch == '\0') {
 			return (Token) {
@@ -64,17 +61,23 @@ Token Lexer_nextToken(Lexer *lex) {
 		string *w = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
 		w->str = lex->string.str + s;
 		w->len = lex->pos - s;
-		++lex->pos;
+		lex->pos++;
 		return (Token) {
 			.type = TOKEN_STRING,
 			.value = (uptr) w
 		};
+	} else if (ch == '\0') {
+		return (Token) {
+			.type = TOKEN_EOF,
+			.value = 0 
+		};
 	}
-	string *ts = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
-	ts->str = lex->string.str + lex->pos;
-	ts->len = 1;
-	return (Token) {
-		.type = TOKEN_INVALID,
-		.value = (uptr) ts
-	};
+	string *w = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
+	usize s = lex->pos;
+	w->str = lex->string.str + lex->pos;
+	do {
+		lex->pos++;
+	} while (isAlphanumerical(lread(lex)));
+	w->len = lex->pos - s;
+	return getToken(w);
 }
