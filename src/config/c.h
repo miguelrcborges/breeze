@@ -25,6 +25,13 @@ enum TOKEN_ACTION_VALUES {
 	ACTION_COUNT
 };
 
+typedef uptr ATTRIBUTES;
+enum TOKEN_ACTION_ATTRIBUTES {
+	ATTRIBUTE_KEY,
+	ATTRIBUTE_MODIFIER,
+	ATTRIBUTE_ARG
+};
+
 typedef struct {
 	TOKEN_TYPE type;
 	TOKEN_VALUE value;
@@ -45,11 +52,15 @@ typedef struct hotkeyList *HotkeyList;
 struct hotkeyList {
 	Hotkey hk;
 	HotkeyList link;
+	usize line;
+	u32 key;
+	u32 mod;
 };
 
 /* lex.c */
 Lexer Lexer_create(string source);
 Token Lexer_nextToken(Lexer *lex);
+Token Lexer_peekToken(Lexer *lex);
 
 /* map.c */
 Token getToken(string *s);

@@ -13,9 +13,9 @@ ctrl TOKEN_MODIFIER mod_ctrl 2
 shift TOKEN_MODIFIER mod_shift 4
 win TOKEN_MODIFIER mod_win 8
 
-key TOKEN_ATTRIBUTE prop_key 0
-modifier TOKEN_ATTRIBUTE prop_modifier 0
-value TOKEN_ATTRIBUTE prop_value 0
+key TOKEN_ATTRIBUTE attr_key ATTRIBUTE_KEY
+modifier TOKEN_ATTRIBUTE attr_modifier ATTRIBUTE_MODIFIER
+value TOKEN_ATTRIBUTE attr_value ATTRIBUTE_ARG
 
 0 TOKEN_KEY key_0 0x30
 1 TOKEN_KEY key_1 0x31

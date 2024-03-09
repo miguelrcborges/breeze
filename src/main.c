@@ -30,6 +30,7 @@ w32(usize) CreateToolhelp32Snapshot(u64 flags, u64 PID);
 w32(bool) Process32First(u64 snapshot, ProcessEntry32 *p);
 w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
 w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
+w32(u32) WaitForSingleObject(usize handle, u32 milis);
 w32(i32) CloseHandle(usize handle);
 w32(usize) OpenProcess(u64 access, bool inherit, u64 PID);
 w32(i32) TerminateProcess(usize handle, u32 code);
@@ -99,11 +100,12 @@ int mainCRTStartup(void) {
 	stdout = getStdOut();
 	stable = Arena_create(0);
 	temp = Arena_create(0);
-	if (loadConfig())
-	 	loadDefaultConfig();
 
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);
+
+	if (loadConfig())
+	 	loadDefaultConfig();
 
 	Message msg;
 	i32 ret;

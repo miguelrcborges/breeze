@@ -78,25 +78,25 @@ static TokenData mod_win = {
 		.value = 8,
 	}
 };
-static TokenData prop_key = {
+static TokenData attr_key = {
 	.string = string("key"),
 	.token = {
 		.type = TOKEN_ATTRIBUTE,
-		.value = 0,
+		.value = ATTRIBUTE_KEY,
 	}
 };
-static TokenData prop_modifier = {
+static TokenData attr_modifier = {
 	.string = string("modifier"),
 	.token = {
 		.type = TOKEN_ATTRIBUTE,
-		.value = 0,
+		.value = ATTRIBUTE_MODIFIER,
 	}
 };
-static TokenData prop_value = {
+static TokenData attr_value = {
 	.string = string("value"),
 	.token = {
 		.type = TOKEN_ATTRIBUTE,
-		.value = 0,
+		.value = ATTRIBUTE_ARG,
 	}
 };
 static TokenData key_0 = {
@@ -723,11 +723,11 @@ static TokenData *hashtable[] = {
 	NULL,
 	NULL,
 	&tk_reload,
-	&prop_value,
+	&attr_value,
 	NULL,
 	NULL,
 	NULL,
-	&prop_key,
+	&attr_key,
 	NULL,
 	NULL,
 	NULL,
@@ -816,7 +816,7 @@ static TokenData *hashtable[] = {
 	&lbrace,
 	NULL,
 	&rbrace,
-	&prop_modifier,
+	&attr_modifier,
 	NULL
 };
 

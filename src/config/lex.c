@@ -79,5 +79,16 @@ Token Lexer_nextToken(Lexer *lex) {
 		lex->pos++;
 	} while (isAlphanumerical(lread(lex)));
 	w->len = lex->pos - s;
-	return getToken(w);
+	Token t = getToken(w);
+	if (t.type == TOKEN_INVALID) {
+		io_write(stderr, string_build(&temp, *w, string(" is an invalid token.\n")));
+	}
+	return t;
+}
+
+Token Lexer_peekToken(Lexer *lex) {
+	usize pos = lex->pos;
+	Token t = Lexer_nextToken(lex);
+	lex->pos = pos;
+	return t;
 }
