@@ -33,7 +33,6 @@ w32(i32) CloseHandle(usize handle);
 w32(void) ExitProcess(u32 code);
 
 void spawn(void *arg) {
-	io_write(stderr, string("[SPAWN] Called\n"));
 	u16 *command = arg;
 
 	StartupInfo si = {

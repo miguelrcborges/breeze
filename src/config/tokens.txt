@@ -15,7 +15,7 @@ win TOKEN_MODIFIER mod_win 8
 
 key TOKEN_ATTRIBUTE attr_key ATTRIBUTE_KEY
 modifier TOKEN_ATTRIBUTE attr_modifier ATTRIBUTE_MODIFIER
-value TOKEN_ATTRIBUTE attr_value ATTRIBUTE_ARG
+arg TOKEN_ATTRIBUTE attr_arg ATTRIBUTE_ARG
 
 0 TOKEN_KEY key_0 0x30
 1 TOKEN_KEY key_1 0x31
@@ -81,5 +81,5 @@ left TOKEN_KEY key_left 0x25
 up TOKEN_KEY key_up 0x26
 right TOKEN_KEY key_right 0x27
 down TOKEN_KEY key_down 0x27
-enter TOKEN_KEY enter 0x20
-space TOKEN_KEY space 0x0D
+enter TOKEN_KEY enter 0x0D
+space TOKEN_KEY space 0x20

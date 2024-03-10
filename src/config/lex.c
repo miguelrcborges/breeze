@@ -46,7 +46,7 @@ Token Lexer_nextToken(Lexer *lex) {
 	skipIgnore(lex);
 	u8 ch = lread(lex);
 	if (ch == '\'') {
-		usize s = lex->pos;
+		usize s = lex->pos + 1;
 		do {
 			lex->pos++;
 			ch = lread(lex);
@@ -88,7 +88,9 @@ Token Lexer_nextToken(Lexer *lex) {
 
 Token Lexer_peekToken(Lexer *lex) {
 	usize pos = lex->pos;
+	usize line = lex->line;
 	Token t = Lexer_nextToken(lex);
 	lex->pos = pos;
+	lex->line = line;
 	return t;
 }

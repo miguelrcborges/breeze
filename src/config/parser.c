@@ -1,5 +1,7 @@
 #include "c.h"
 
+w32(i32) MultiByteToWideChar(u32 code, u64 flags, const u8 *utf8buf, i32 utf8len, u16 *utf16buf, i32 utf16len);
+
 static HotkeyList htk;
 static Lexer *l;
 static bool err;
@@ -27,6 +29,12 @@ static void (*actionMap[ACTION_COUNT])(void *arg) = {
 	[ACTION_SPAWN] = spawn,
 	[ACTION_RELOAD] = reloadConfig,
 	[ACTION_QUIT] = quit,
+};
+
+static string actionStrings[ACTION_COUNT] = {
+	[ACTION_SPAWN] = string("spawn"),
+	[ACTION_RELOAD] = string("reload"),
+	[ACTION_QUIT] = string("quit"),
 };
 
 static void parseAction(uptr action);
@@ -78,6 +86,7 @@ end:
 }
 
 static void parseAction(uptr action) {
+	usize line_start = l->line;
 	Token t = Lexer_nextToken(l);
 	if (t.type != TOKEN_LBRACE) {
 		string line;
@@ -90,7 +99,7 @@ static void parseAction(uptr action) {
 	}
 
 	HotkeyList new = unwrap(Arena_alloc(&temp, sizeof(*new), sizeof(void*)));	
-	new->line = l->line;
+	new->line = line_start;
 	new->hk.fun = actionMap[action];
 	new->hk.arg = NULL;
 	new->mod = 0;
@@ -104,7 +113,7 @@ static void parseAction(uptr action) {
 			}
 			case TOKEN_EOF: {
 				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
+				if (string_fmtu64(&temp, new->line, &line)) {
 					line = string("##");
 				}
 				io_write(stderr, string_build(&temp, string("Unclosed action scope opened at line "), line, string(".\n")));
@@ -116,7 +125,7 @@ static void parseAction(uptr action) {
 			}
 			default: {
 				string line;
-				if (string_fmtu64(&temp, new->line, &line)) {
+				if (string_fmtu64(&temp, l->line, &line)) {
 					line = string("##");
 				}
 				io_write(stderr, string_build(&temp, string("Expected an action attribute, got "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
@@ -200,6 +209,33 @@ static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 				}
 				hkl->mod |= t.value;
 			}
+			return;
+		}
+		case ATTRIBUTE_ARG: {
+			if (!actionRequiresArg[action]) {
+				err = 1;
+				string line;
+				if (string_fmtu64(&temp, htk->line, &line)) {
+					line = string("##");
+				}
+				io_write(stderr, string_build(&temp, string("The action "), actionStrings[action], string(", created at line "), line, string(" mustn't have an arg attribute.\n")));
+				return;
+			}
+			if (t.type != TOKEN_STRING) {
+				err = 1;
+				string line;
+				if (string_fmtu64(&temp, l->line, &line)) {
+					line = string("##");
+				}
+				io_write(stderr, string_build(&temp, string("Expected a string. Got a "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+				return;
+			}
+			string s = *(string *) t.value;
+			i32 len = MultiByteToWideChar(65001, 0, s.str, s.len, NULL, 0);
+			u16 *utf16 = unwrap(Arena_alloc(&stable, len * sizeof(*utf16) + 1, sizeof(*utf16)));
+			MultiByteToWideChar(65001, 0, s.str, s.len, utf16, len);
+			utf16[len] = L'\0';
+			hkl->hk.arg = utf16;
 			return;
 		}
 	} 

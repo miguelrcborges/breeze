@@ -4,7 +4,7 @@
 w32(i32) RegisterHotKey(usize handle, i32 id, u32 mods, u32 code);
 w32(i32) UnregisterHotKey(usize handle, i32 id);
 
-u16 explorer[] = L"C:\\Windows\\explorer.exe file:";
+u16 explorer[] = L"explorer.exe file:";
 
 static Hotkey defaultAction[] = {
 	{
@@ -74,7 +74,7 @@ bool loadConfig(void) {
 				if (string_fmtu64(&temp, n->line, &line)) {
 					line = string("##");
 				}
-				io_write(stderr, string_build(&temp, string("Failed to register hotkey defined by the action created at line"), line, string(".\n")));
+				io_write(stderr, string_build(&temp, string("Failed to register hotkey defined by the action created at line "), line, string(".\n")));
 			}
 			arr[i] = n->hk;
 			n = n->link;
