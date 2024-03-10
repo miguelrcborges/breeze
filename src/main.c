@@ -95,7 +95,11 @@ Hotkey *hotkeys = NULL;
 Arena stable;
 Arena temp;
 
+#ifdef WINDOW
+int WinMainCRTStartup(void) {
+#else
 int mainCRTStartup(void) {
+#endif
 	stderr = getStdErr();
 	stdout = getStdOut();
 	stable = Arena_create(0);
