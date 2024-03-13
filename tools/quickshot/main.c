@@ -3,6 +3,9 @@
 #include <wingdi.h>
 #include <uxtheme.h>
 
+#define MAX(a, b) ((a)>(b)?(a):(b))
+#define MIN(a, b) ((a)<(b)?(a):(b))
+
 static const char *className = "quickshotClass";
 static const char *windowName = "quickshot";
 
@@ -191,8 +194,15 @@ giveup:
 		if (!selecting)
 			break;
 
+		RECT invalid;
+		int oldX = endX;
+		int oldY = endY;
 		endX = GET_X_LPARAM(LParam);
 		endY = GET_Y_LPARAM(LParam);
+		invalid.top = MIN(MIN(oldY, endY), startY);
+		invalid.bottom = MAX(MAX(oldY, endY), startY);	
+		invalid.left = MIN(MIN(oldX, endX), startX);
+		invalid.right = MAX(MAX(oldX, endX), startX);	
 
 		if (startX > endX) {
 			lowerX = endX;
@@ -201,7 +211,6 @@ giveup:
 			lowerX = startX;
 			width = endX - startX;
 		}
-
 		if (startY > endY) {
 			lowerY = endY;
 			height = startY - endY;
@@ -210,7 +219,7 @@ giveup:
 			height = endY - startY;
 		}
 
-		InvalidateRect(Window, NULL, FALSE);
+		InvalidateRect(Window, &invalid, FALSE);
 		break;
 	}
 
