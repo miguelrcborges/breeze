@@ -1,12 +1,13 @@
 # quickshot
 
 Minimal screenshotting tool with the goal of replace the one included in the window's shell.
-Supports every windows version from Vista and Server 2008 (theorically, not actually tested).
-Can support older versions if buffered paint is dropped.
+
+Regular version supports every windows version from Vista and Server 2008.
+
+Unbuffered version is supported in every version from Windows XP and Server 2003.
 
 
 ## Downloads
-- [x86_64 mingw ucrt](https://files.catbox.moe/6kgfqw.zip)
-- [x86 mingw mvscrt](https://files.catbox.moe/jr62uy.zip)
-
-Note: UCRT versions only work in Windows versions from 8.1.
+- [64bit](https://files.catbox.moe/kgxpyf.zip)
+- [32bit](https://files.catbox.moe/2m3xwp.zip)
+- [32bit unbuffered](https://files.catbox.moe/ffz51v.zip)
