@@ -29,12 +29,14 @@ static void (*actionMap[ACTION_COUNT])(void *arg) = {
 	[ACTION_SPAWN] = spawn,
 	[ACTION_RELOAD] = reloadConfig,
 	[ACTION_QUIT] = quit,
+	[ACTION_KILL] = kill,
 };
 
 static string actionStrings[ACTION_COUNT] = {
 	[ACTION_SPAWN] = string("spawn"),
 	[ACTION_RELOAD] = string("reload"),
 	[ACTION_QUIT] = string("quit"),
+	[ACTION_KILL] = string("kill"),
 };
 
 static void parseAction(uptr action);

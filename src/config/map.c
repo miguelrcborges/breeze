@@ -50,6 +50,13 @@ static TokenData tk_quit = {
 		.value = ACTION_QUIT,
 	}
 };
+static TokenData tk_kill = {
+	.string = string("kill"),
+	.token = {
+		.type = TOKEN_ACTION,
+		.value = ACTION_KILL,
+	}
+};
 static TokenData mod_alt = {
 	.string = string("alt"),
 	.token = {
@@ -562,7 +569,7 @@ static TokenData space = {
 	}
 };
 static TokenData *hashtable[] = {
-	NULL,
+	&tk_kill,
 	NULL,
 	&key_f20,
 	&key_f21,

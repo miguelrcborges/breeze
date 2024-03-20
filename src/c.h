@@ -10,6 +10,7 @@ typedef struct {
 void spawn(void *arg);
 void quit(void *arg);
 void reloadConfig(void *arg);
+void kill(void *arg);
 
 /* config */
 bool loadConfig(void);

@@ -7,6 +7,7 @@
 spawn TOKEN_ACTION tk_spawn ACTION_SPAWN
 reload TOKEN_ACTION tk_reload ACTION_RELOAD
 quit TOKEN_ACTION tk_quit ACTION_QUIT
+kill TOKEN_ACTION tk_kill ACTION_KILL
 
 alt TOKEN_MODIFIER mod_alt 1
 ctrl TOKEN_MODIFIER mod_ctrl 2

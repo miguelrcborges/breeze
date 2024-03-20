@@ -30,6 +30,8 @@ typedef struct {
 
 w32(i32) CreateProcessW(u16 *exe, u16 *cmdline, void *pAttr, void *tAttr, u32 inherit, u32 flags, void *env, char *dir, StartupInfo *startupInfo, void *procInfo);
 w32(i32) CloseHandle(usize handle);
+w32(i32) PostMessageA(usize handle, u32 message, void *param, void *param2);
+w32(usize) GetForegroundWindow(void);
 w32(void) ExitProcess(u32 code);
 
 void spawn(void *arg) {
@@ -56,4 +58,8 @@ void reloadConfig(void *arg) {
 	Arena_free(&stable);
 	if (loadConfig())
 		loadDefaultConfig();
+}
+
+void kill(void *arg) {
+	PostMessageA(GetForegroundWindow(), 0x10, 0, 0);
 }
