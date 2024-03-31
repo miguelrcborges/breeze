@@ -1,5 +1,4 @@
 #include "c.h"
-#include "lib.h"
 
 w32(i32) RegisterHotKey(usize handle, i32 id, u32 mods, u32 code);
 w32(i32) UnregisterHotKey(usize handle, i32 id);
@@ -43,23 +42,20 @@ bool loadConfig(void) {
 	for (usize i = 0; i < hotkeys_count; ++i)
 		UnregisterHotKey(0, i);
 
-	string content;
-	if (io_readFile(&temp, string("breeze.conf"), &content)) {
-		return 1;
-	}
+	string content = io_readFile(&temp, str("breeze.conf"));
 	Lexer lex = Lexer_create(content);
 	HotkeyList hkl = parse(&lex);
 	if (hkl == NULL) {
 		return 1;
 	} else {
-		io_write(stdout, string("Loading user's configuration.\n"));
+		io_write(stdout, str("Loading user's configuration.\n"));
 		HotkeyList n = hkl;
 		usize i = 0;
 		do {
 			i += 1;
 			n = n->link;
 		} while (n != hkl);
-		Hotkey *arr = unwrap(Arena_alloc(&stable, i * sizeof(Hotkey), sizeof(void*)));
+		Hotkey *arr = Arena_alloc(&stable, i * sizeof(Hotkey), sizeof(void*));
 		i = 0;
 		do {
 			bool err = 1;
@@ -70,11 +66,8 @@ bool loadConfig(void) {
 				}
 			}
 			if (err) {
-				string line;
-				if (string_fmtu64(&temp, n->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Failed to register hotkey defined by the action created at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Failed to register hotkey defined by the action created at line "),
+					string_fmtu64(&temp, n->line), str(".\n")));
 			}
 			arr[i] = n->hk;
 			n = n->link;
@@ -88,8 +81,8 @@ bool loadConfig(void) {
 }
 
 void loadDefaultConfig() {
-	static_assert(len(defaultKeys) == len(defaultAction), "Valid default configuration.");
-	io_write(stdout, string("Loading default configuration.\n"));
+	static_assert(len(defaultKeys) == len(defaultAction));
+	io_write(stdout, str("Loading default configuration.\n"));
 
 	for (usize i = 0; i < len(defaultKeys); ++i) {
 		bool err = 0;
@@ -99,12 +92,7 @@ void loadDefaultConfig() {
 			}
 		}
 		if (err) {
-			string number;
-			if (string_fmtu64(&stable, i, &number)) {
-				io_write(stderr, string("Failed to set a hotkey.\n"));
-				continue;
-			}
-			io_write(stderr, string_build(&temp, string("Failed to set default keybind no. "), number, string(".\n")));
+			io_write(stderr, string_build(&temp, str("Failed to set default keybind no. "), string_fmtu64(&stable, i), str(".\n")));
 		}
 	}
 	hotkeys = defaultAction;

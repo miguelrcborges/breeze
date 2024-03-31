@@ -7,18 +7,18 @@ static Lexer *l;
 static bool err;
 
 static string tokenStrings[TOKEN_COUNT] = {
-	[TOKEN_INVALID] = string("invalid"),
-	[TOKEN_EOF] = string("end of file"),
-	[TOKEN_UNTERMINATED_STRING] = string("unterminated string"),
-	[TOKEN_LBRACE] = string("left brace"),
-	[TOKEN_RBRACE] = string("right brace"),
-	[TOKEN_PLUS] = string("+ operator"),
-	[TOKEN_EQUAL] = string("= operator"),
-	[TOKEN_ACTION] = string("action"),
-	[TOKEN_ATTRIBUTE] = string("action attribute"),
-	[TOKEN_KEY] = string("key token"),
-	[TOKEN_STRING] = string("string"),
-	[TOKEN_MODIFIER] = string("modifier token")
+	[TOKEN_INVALID] = str("invalid"),
+	[TOKEN_EOF] = str("end of file"),
+	[TOKEN_UNTERMINATED_STRING] = str("unterminated string"),
+	[TOKEN_LBRACE] = str("left brace"),
+	[TOKEN_RBRACE] = str("right brace"),
+	[TOKEN_PLUS] = str("+ operator"),
+	[TOKEN_EQUAL] = str("= operator"),
+	[TOKEN_ACTION] = str("action"),
+	[TOKEN_ATTRIBUTE] = str("action attribute"),
+	[TOKEN_KEY] = str("key token"),
+	[TOKEN_STRING] = str("string"),
+	[TOKEN_MODIFIER] = str("modifier token")
 };
 
 static bool actionRequiresArg[ACTION_COUNT] = {
@@ -33,10 +33,10 @@ static void (*actionMap[ACTION_COUNT])(void *arg) = {
 };
 
 static string actionStrings[ACTION_COUNT] = {
-	[ACTION_SPAWN] = string("spawn"),
-	[ACTION_RELOAD] = string("reload"),
-	[ACTION_QUIT] = string("quit"),
-	[ACTION_KILL] = string("kill"),
+	[ACTION_SPAWN] = str("spawn"),
+	[ACTION_RELOAD] = str("reload"),
+	[ACTION_QUIT] = str("quit"),
+	[ACTION_KILL] = str("kill"),
 };
 
 static void parseAction(uptr action);
@@ -64,7 +64,7 @@ HotkeyList parse(Lexer *lex) {
 				break;
 			}
 			case TOKEN_UNTERMINATED_STRING: {
-				io_write(stderr, string("Unterminated string in the configuration file at an action position.\n"));
+				io_write(stderr, str("Unterminated string in the configuration file at an action position.\n"));
 				err = 1;
 				goto end;
 			}
@@ -72,11 +72,8 @@ HotkeyList parse(Lexer *lex) {
 				goto end;
 			}
 			default: {
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Expected action, got "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Expected action, got "), tokenStrings[t.type],
+					str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 				err = 1;
 			}
 		}
@@ -91,16 +88,13 @@ static void parseAction(uptr action) {
 	usize line_start = l->line;
 	Token t = Lexer_nextToken(l);
 	if (t.type != TOKEN_LBRACE) {
-		string line;
-		if (string_fmtu64(&temp, l->line, &line)) {
-			line = string("##");
-		}
-		io_write(stderr, string_build(&temp, string("Expected a left brace, got "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+		io_write(stderr, string_build(&temp, str("Expected a left brace, got "), tokenStrings[t.type],
+			str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 		err = 1;
 		return;
 	}
 
-	HotkeyList new = unwrap(Arena_alloc(&temp, sizeof(*new), sizeof(void*)));	
+	HotkeyList new = Arena_alloc(&temp, sizeof(*new), sizeof(void*));
 	new->line = line_start;
 	new->hk.fun = actionMap[action];
 	new->hk.arg = NULL;
@@ -114,11 +108,8 @@ static void parseAction(uptr action) {
 				break;
 			}
 			case TOKEN_EOF: {
-				string line;
-				if (string_fmtu64(&temp, new->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Unclosed action scope opened at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Unclosed action scope opened at line "),
+					string_fmtu64(&temp, new->line), str(".\n")));
 				err = 1;
 				goto end;
 			}
@@ -126,22 +117,16 @@ static void parseAction(uptr action) {
 				goto exit_loop;
 			}
 			default: {
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Expected an action attribute, got "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Expected an action attribute, got "), tokenStrings[t.type],
+							str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 				err = 1;
 			}
 		}
 	}
 exit_loop:
 	if (!likely(new->key && new->mod && (!actionRequiresArg[action] || new->hk.arg))) {
-		string line;
-		if (string_fmtu64(&temp, new->line, &line)) {
-			line = string("##");
-		}
-		io_write(stderr, string_build(&temp, string("Not enough attributes defined in the action created at line "), line, string(".\n")));
+		io_write(stderr, string_build(&temp, str("Not enough attributes defined in the action created at line "),
+			string_fmtu64(&temp, new->line), str(".\n")));
 		err = 1;
 	} else {
 		htk_insert(new);
@@ -153,12 +138,9 @@ end:
 static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 	Token t = Lexer_nextToken(l);
 	if (t.type != TOKEN_EQUAL) {
-		string line;
 		err = 1;
-		if (string_fmtu64(&temp, l->line, &line)) {
-			line = string("##");
-		}
-		io_write(stderr, string_build(&temp, string("Expected a = operator, got "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+		io_write(stderr, string_build(&temp, str("Expected a = operator, got "), tokenStrings[t.type],
+			str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 		return;
 	}
 	t = Lexer_nextToken(l);
@@ -166,21 +148,15 @@ static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 		case ATTRIBUTE_KEY: {
 			if (t.type != TOKEN_KEY) {
 				err = 1;
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Inserted a "), tokenStrings[t.type], string(" token in a place of a key token, at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Inserted a "), tokenStrings[t.type],
+					str(" token in a place of a key token, at line "), string_fmtu64(&temp, l->line), str(".\n")));
 				return;
 			}
 			u32 tmpkey = t.value;
 			if (Lexer_peekToken(l).type == TOKEN_PLUS) {
 				err = 1;
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("You can only assign one key per hotkey. Error at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("You can only assign one key per hotkey. Error at line "),
+					string_fmtu64(&temp, l->line), str(".\n")));
 				return;
 			}
 			hkl->key = tmpkey;
@@ -189,11 +165,8 @@ static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 		case ATTRIBUTE_MODIFIER: {
 			if (t.type != TOKEN_MODIFIER) {
 				err = 1;
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Expected a modifier token. Got a "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Expected a modifier token. Got a "), tokenStrings[t.type],
+					str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 				return;
 			}
 			hkl->mod = t.value;
@@ -202,11 +175,8 @@ static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 				t = Lexer_nextToken(l);
 				if (t.type != TOKEN_MODIFIER) {
 					err = 1;
-					string line;
-					if (string_fmtu64(&temp, l->line, &line)) {
-						line = string("##");
-					}
-					io_write(stderr, string_build(&temp, string("Expected a modifier token after +, got "), tokenStrings[t.type], string(" token at line "), line, string(".\n")));
+					io_write(stderr, string_build(&temp, str("Expected a modifier token after +, got "),
+						tokenStrings[t.type], str(" token at line "), string_fmtu64(&temp, l->line), str(".\n")));
 					return;
 				}
 				hkl->mod |= t.value;
@@ -216,25 +186,19 @@ static void parseActionAttribute(uptr action, uptr attr, HotkeyList hkl) {
 		case ATTRIBUTE_ARG: {
 			if (!actionRequiresArg[action]) {
 				err = 1;
-				string line;
-				if (string_fmtu64(&temp, htk->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("The action "), actionStrings[action], string(", created at line "), line, string(" mustn't have an arg attribute.\n")));
+				io_write(stderr, string_build(&temp, str("The action "), actionStrings[action], str(", created at line "),
+					string_fmtu64(&temp, htk->line), str(" mustn't have an arg attribute.\n")));
 				return;
 			}
 			if (t.type != TOKEN_STRING) {
 				err = 1;
-				string line;
-				if (string_fmtu64(&temp, l->line, &line)) {
-					line = string("##");
-				}
-				io_write(stderr, string_build(&temp, string("Expected a string. Got a "), tokenStrings[t.type], string(" at line "), line, string(".\n")));
+				io_write(stderr, string_build(&temp, str("Expected a string. Got a "), tokenStrings[t.type],
+					str(" at line "), string_fmtu64(&temp, l->line), str(".\n")));
 				return;
 			}
 			string s = *(string *) t.value;
 			i32 len = MultiByteToWideChar(65001, 0, s.str, s.len, NULL, 0);
-			u16 *utf16 = unwrap(Arena_alloc(&stable, len * sizeof(*utf16) + 1, sizeof(*utf16)));
+			u16 *utf16 = Arena_alloc(&stable, len * sizeof(*utf16) + 1, sizeof(*utf16));
 			MultiByteToWideChar(65001, 0, s.str, s.len, utf16, len);
 			utf16[len] = L'\0';
 			hkl->hk.arg = utf16;

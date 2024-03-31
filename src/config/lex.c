@@ -58,7 +58,7 @@ Token Lexer_nextToken(Lexer *lex) {
 				.type = TOKEN_UNTERMINATED_STRING
 			};
 		}
-		string *w = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
+		string *w = Arena_alloc(&temp, sizeof(string), sizeof(void*));
 		w->str = lex->string.str + s;
 		w->len = lex->pos - s;
 		lex->pos++;
@@ -72,7 +72,7 @@ Token Lexer_nextToken(Lexer *lex) {
 			.value = 0 
 		};
 	}
-	string *w = unwrap(Arena_alloc(&temp, sizeof(string), sizeof(void*)));
+	string *w = Arena_alloc(&temp, sizeof(string), sizeof(void*));
 	usize s = lex->pos;
 	w->str = lex->string.str + lex->pos;
 	do {
@@ -81,7 +81,7 @@ Token Lexer_nextToken(Lexer *lex) {
 	w->len = lex->pos - s;
 	Token t = getToken(w);
 	if (t.type == TOKEN_INVALID) {
-		io_write(stderr, string_build(&temp, *w, string(" is an invalid token.\n")));
+		io_write(stderr, string_build(&temp, *w, str(" is an invalid token.\n")));
 	}
 	return t;
 }
