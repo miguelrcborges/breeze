@@ -1,2 +1,5 @@
-/breeze.exe
-/breezew.exe
+*.exe
+*.pdb
+*.obj
+*.o
+*.ilk

@@ -1,3 +1,0 @@
-[submodule "deps/lib"]
-	path = deps/lib
-	url = git@github.com:miguelrcborges/lib.git

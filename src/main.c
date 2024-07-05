@@ -1,44 +1,9 @@
 #include "c.h"
+#include "tlhelp32.h"
 
-typedef struct {
-  u32 size;
-  u32 countUsage;
-  u32 PID;
-  u32 *defaultHeapID;
-  u32 moduleID;
-  u32 countThreads;
-  u32 parentPID;
-  u32 pcPriClassBase;
-  u32 flags;
-  u8 exeFile[260];
-} ProcessEntry32;
+#include "action.c"
+#include "config/config.c"
 
-typedef struct {
-	usize handle;
-	u32 message;
-	void *param1;
-	uptr param2;
-	u32 time;
-	struct {
-		long x;
-		long y;
-	} Point;
-	u32 private;
-} Message;
-
-w32(usize) CreateToolhelp32Snapshot(u64 flags, u64 PID);
-w32(bool) Process32First(u64 snapshot, ProcessEntry32 *p);
-w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
-w32(bool) Process32Next(u64 snapshot, ProcessEntry32 *p);
-w32(u32) WaitForSingleObject(usize handle, u32 milis);
-w32(i32) CloseHandle(usize handle);
-w32(usize) OpenProcess(u64 access, bool inherit, u64 PID);
-w32(i32) TerminateProcess(usize handle, u32 code);
-w32(i32) SystemParametersInfoW(u32 action, u32 param, void *vparam, u32 ini);
-w32(i32) EnumDisplayMonitors(usize handle, void *rect, i32 (*enumProc)(usize mon, usize param1, void *rect, void *lparam), u32 data);
-w32(i32) RegisterHotKey(usize handle, i32 id, u32 mod, u32 keycode);
-w32(i32) GetMessageW(Message *msg, usize handle, u32 filterMin, u32 filterMax);
-w32(void) ExitProcess(u32 code);
 
 static const char *processesToKill[] = {
 	"explorer.exe",
@@ -46,30 +11,17 @@ static const char *processesToKill[] = {
 	"TextInputHost.exe",
 };
 
-static bool u8buf_areEqual(const u8 *restrict f, const u8 *restrict s) {
-	while (*f != '\0' && *s != '\0') {
-		if (*f == *s) {
-			f += 1;
-			s += 1;
-		} else {
-			return 0;
-		}
-	}
-	return *f == '\0' && *s == '\0';
-}
-
 static void killProcesses(void) {
-	usize snapshot = CreateToolhelp32Snapshot(2, 0);
+	HANDLE snapshot = CreateToolhelp32Snapshot(2, 0);
 
 	if (snapshot) {
-		ProcessEntry32 pe32;
-		pe32.size = sizeof(ProcessEntry32);
-
+		PROCESSENTRY32 pe32;
+		pe32.dwSize = sizeof(PROCESSENTRY32);
 		if (Process32First(snapshot, &pe32)) {
 			do {
 				for (usize p = 0; p < len(processesToKill); ++p) {
-					if (u8buf_areEqual(pe32.exeFile, (u8 *) processesToKill[p])) {
-						usize process = OpenProcess(1, 0, pe32.PID);
+					if (strcmp(pe32.szExeFile, processesToKill[p]) == 0) {
+						HANDLE process = OpenProcess(1, 0, pe32.th32ProcessID);
 						if (process != 0) {
 							TerminateProcess(process, 1); 
 							CloseHandle(process);
@@ -83,35 +35,27 @@ static void killProcesses(void) {
 	}
 }
 
-static i32 __stdcall updateWorkArea(usize mon, usize param1, void *rect, void *lparam) {
+static BOOL __stdcall updateWorkArea(HMONITOR mon, HDC param1, LPRECT rect, LPARAM lparam) {
 	SystemParametersInfoW(0x2F, 0, rect, 1);
 	return 1;
 }
 
-usize stderr;
-usize stdout;
 usize hotkeys_count = 0;
 Hotkey *hotkeys = NULL;
-Arena stable;
-Arena temp;
+Hotkey hotkeys_buf[MAX_HOTKEYS];
 
 #ifdef WINDOW
-int WinMainCRTStartup(void) {
+int WinMain(void) {
 #else
-int mainCRTStartup(void) {
+int main(void) {
 #endif
-	stderr = getStdErr();
-	stdout = getStdOut();
-	stable = Arena_create(0);
-	temp = Arena_create(0);
-
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);
 
 	if (loadConfig())
 	 	loadDefaultConfig();
 
-	Message msg;
+	MSG msg;
 	i32 ret;
 	while ((ret = GetMessageW(&msg, 0, 0, 0))) {
 		if (ret == -1) {
@@ -119,8 +63,8 @@ int mainCRTStartup(void) {
 		}
 
 		switch (msg.message) {
-			case 0x0312: {
-				usize id = (u64) msg.param1;
+			case WM_HOTKEY: {
+				usize id = (usize) msg.wParam;
 				if (id <= hotkeys_count) {
 					hotkeys[id].fun(hotkeys[id].arg);
 				}

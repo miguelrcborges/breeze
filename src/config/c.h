@@ -1,7 +1,10 @@
+#ifndef CONFIG_C_H
+#define CONFIG_C_H
+
 #include "../c.h"
 
-typedef u8 TOKEN_TYPE;
-enum _TOKEN_TYPE {
+typedef u8 CONFIG_TOKEN_TYPE;
+enum _CONFIG_TOKEN_TYPE {
 	TOKEN_INVALID,
 	TOKEN_EOF,
 	TOKEN_UNTERMINATED_STRING,
@@ -17,7 +20,6 @@ enum _TOKEN_TYPE {
 	TOKEN_COUNT
 };
 
-typedef uptr TOKEN_VALUE;
 enum TOKEN_ACTION_VALUES {
 	ACTION_SPAWN,
 	ACTION_RELOAD,
@@ -26,7 +28,7 @@ enum TOKEN_ACTION_VALUES {
 	ACTION_COUNT
 };
 
-typedef uptr ATTRIBUTES;
+typedef u8 ATTRIBUTES;
 enum TOKEN_ACTION_ATTRIBUTES {
 	ATTRIBUTE_KEY,
 	ATTRIBUTE_MODIFIER,
@@ -34,37 +36,31 @@ enum TOKEN_ACTION_ATTRIBUTES {
 };
 
 typedef struct {
-	TOKEN_TYPE type;
-	TOKEN_VALUE value;
+	CONFIG_TOKEN_TYPE type;
+	uptr value;
 } Token;
 
 typedef struct {
-	string string;
+	char *string;
 	Token token;
 } TokenData;
 
 typedef struct {
-	string string;
+	char *string;
 	usize pos;
 	usize line;
+	usize alloc_pos;
 } Lexer;
 
-typedef struct hotkeyList *HotkeyList;
-struct hotkeyList {
-	Hotkey hk;
-	HotkeyList link;
-	usize line;
-	u32 key;
-	u32 mod;
-};
-
 /* lex.c */
-Lexer Lexer_create(string source);
+Lexer Lexer_create(char *source);
 Token Lexer_nextToken(Lexer *lex);
 Token Lexer_peekToken(Lexer *lex);
 
 /* map.c */
-Token getToken(string *s);
+Token getToken(char *s);
 
 /* parser.c */
-HotkeyList parse(Lexer *lex);
+bool parse(Lexer *lex);
+
+#endif

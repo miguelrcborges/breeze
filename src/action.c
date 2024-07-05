@@ -1,50 +1,16 @@
 #include "c.h"
 
-typedef struct {
-	u32 size;
-	u16 *reserved;
-	u16 *desktop;
-	u16 *title;
-	u32 x;
-	u32 y;
-	u32 width;
-	u32 height;
-	u32 columns;
-	u32 rows;
-	u32 fill;
-	u32 flags;
-	u16 show;
-	u16 reserved2;
-	void *reserved3;
-	usize stdin;
-	usize stdout;
-	usize stderr;
-} StartupInfo;
-
-typedef struct {
-	usize process;
-	usize thread;
-	usize PID;
-	usize threadID;
-} ProcessInformation;
-
-w32(i32) CreateProcessW(u16 *exe, u16 *cmdline, void *pAttr, void *tAttr, u32 inherit, u32 flags, void *env, char *dir, StartupInfo *startupInfo, void *procInfo);
-w32(i32) CloseHandle(usize handle);
-w32(i32) PostMessageA(usize handle, u32 message, void *param, void *param2);
-w32(usize) GetForegroundWindow(void);
-w32(void) ExitProcess(u32 code);
-
 void spawn(void *arg) {
 	u16 *command = arg;
 
-	StartupInfo si = {
-		.size = sizeof(StartupInfo)
+	STARTUPINFOW si = {
+		.cb = sizeof(STARTUPINFOW)
 	};
-	ProcessInformation pi;
+	PROCESS_INFORMATION pi;
 
 	CreateProcessW(0, command, 0, 0, 0, 0, 0, 0, &si, &pi);
-	CloseHandle(pi.thread);
-	CloseHandle(pi.process);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
 }
 
 void quit(void *arg) {
@@ -55,11 +21,10 @@ void quit(void *arg) {
 }
 
 void reloadConfig(void *arg) {
-	Arena_free(&stable);
 	if (loadConfig())
 		loadDefaultConfig();
 }
 
 void kill(void *arg) {
-	PostMessageA(GetForegroundWindow(), 0x10, 0, 0);
+	PostMessageA(GetForegroundWindow(), WM_CLOSE, 0, 0);
 }

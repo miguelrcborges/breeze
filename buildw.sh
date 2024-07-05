@@ -1,4 +1,4 @@
-LINKS="-lkernel32 -luser32"
+LINKS="-lkernel32 -luser32 -lntdll"
 
 if [ -z "$CC" ]
 then
@@ -10,6 +10,6 @@ then
 	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1"
 fi
 
-CFLAGS="$CFLAGS -DWINDOW -mwindows -ffreestanding -nostdlib -Ideps/lib"
+CFLAGS="-DWINDOW -mwindows"
 
-$CC $LINKS $CFLAGS src/*.c src/config/*.c deps/lib/src/win32/io.c deps/lib/src/win32/mem.c deps/lib/src/compilercope.c deps/lib/src/mem.c deps/lib/src/str.c deps/lib/src/win32/chkstk.S -o breezew.exe
+$CC $LINKS $CFLAGS src/main.c -o breezew.sh

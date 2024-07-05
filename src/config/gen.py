@@ -52,7 +52,7 @@ static usize hashtable_size = %d;
 
 for w in tokens:
     f.write("""static TokenData %s = {
-\t.string = str("%s"),
+\t.string = "%s",
 \t.token = {
 \t\t.type = %s,
 \t\t.value = %s,
@@ -73,18 +73,19 @@ for i in range(hashtable_len):
 
 f.write("""};
 
-static u16 hash(string s) {
+static u16 hash(char *s) {
 \tu16 h = %d;
-\tfor (usize i = 0; i < s.len; ++i) {
-\t\th = h * %d + s.str[i];
+\twhile (*s != '\\0') {
+\t\th = h * %d + *s;
+\t\ts++;
 \t}
 \treturn h;
 }
 
-Token getToken(string *s) {
-\tu16 h = hash(*s);
+Token getToken(char *s) {
+\tu16 h = hash(s);
 \th = h & (hashtable_size - 1);
-\tif (hashtable[h] && string_equal(*s, hashtable[h]->string)) {
+\tif (hashtable[h] && (strcmp(s, hashtable[h]->string) == 0)) {
 \t\treturn hashtable[h]->token;
 \t}
 \treturn (Token) {

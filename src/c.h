@@ -1,10 +1,23 @@
-#include "lib.h"
+#ifndef C_H
+#define C_H
+
+#include "mbbase.h"
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+
+enum CONSTANTS {
+	MAX_HOTKEYS = 1024,
+	MAX_CONFIG_FILE_SIZE = 65535,
+	WIDESTR_ALLOC_BUFF_SIZE = 10240, 
+};
 
 typedef struct {
 	void (*fun)(void *arg);
 	void *arg;
+	usize line;
+	u32 key;
+	u32 mod;
 } Hotkey;
-
 
 /* action */
 void spawn(void *arg);
@@ -18,8 +31,7 @@ void loadDefaultConfig(void);
 
 /* main.c */
 extern usize hotkeys_count;
+extern Hotkey hotkeys_buf[MAX_HOTKEYS];
 extern Hotkey *hotkeys;
-extern usize stderr;
-extern usize stdout;
-extern Arena stable;
-extern Arena temp;
+
+#endif

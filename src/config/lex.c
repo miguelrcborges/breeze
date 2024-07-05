@@ -1,11 +1,8 @@
 #include "c.h"
 
-static u8 lread(Lexer *lex) {
-	if (lex->pos >= lex->string.len) {
-		return '\0';
-	}
-	return lex->string.str[lex->pos];
-}
+#include <stdio.h>
+
+static u16 widestring_alloc[WIDESTR_ALLOC_BUFF_SIZE];
 
 static bool isAlphanumerical(u8 ch) {
 	return ch >= 'a' && ch <= 'z' ||
@@ -27,29 +24,30 @@ static void skipIgnore(Lexer *lex) {
 	};
 
 	u8 ch;
-	while (skipTable[(ch = lread(lex))]) {
+	while (skipTable[ch = lex->string[lex->pos]]) {
 		if (ch == '\n')
 			lex->line++;
 		lex->pos++;
 	}
 }
 
-Lexer Lexer_create(string source) {
+Lexer Lexer_create(char *source) {
 	return (Lexer) {
 		.string = source,
 		.pos = 0,
-		.line = 1
+		.line = 1,
+		.alloc_pos = 0
 	};
 }
 
 Token Lexer_nextToken(Lexer *lex) {
 	skipIgnore(lex);
-	u8 ch = lread(lex);
+	u8 ch = lex->string[lex->pos];
 	if (ch == '\'') {
 		usize s = lex->pos + 1;
 		do {
 			lex->pos++;
-			ch = lread(lex);
+			ch = lex->string[lex->pos];
 			if (ch == '\n')
 				lex->line++;
 		} while (ch != '\'' && ch != '\0');
@@ -58,13 +56,18 @@ Token Lexer_nextToken(Lexer *lex) {
 				.type = TOKEN_UNTERMINATED_STRING
 			};
 		}
-		string *w = Arena_alloc(&temp, sizeof(string), sizeof(void*));
-		w->str = lex->string.str + s;
-		w->len = lex->pos - s;
+		u16 *wstr = widestring_alloc + lex->alloc_pos;
+		int written = MultiByteToWideChar(CP_UTF8, 0, lex->string + s, lex->pos - s - 1, wstr, WIDESTR_ALLOC_BUFF_SIZE - lex->alloc_pos);
+		if (unlikely(written == 0)) {
+			fprintf(stderr, "Failed to convert UTF-8 string to UTF-16: %lu.\n", GetLastError());
+			exit(1);
+		}
+		wstr[written] = '\0';
 		lex->pos++;
+		lex->alloc_pos += written + 1;
 		return (Token) {
 			.type = TOKEN_STRING,
-			.value = (uptr) w
+			.value = (uptr) wstr
 		};
 	} else if (ch == '\0') {
 		return (Token) {
@@ -72,16 +75,16 @@ Token Lexer_nextToken(Lexer *lex) {
 			.value = 0 
 		};
 	}
-	string *w = Arena_alloc(&temp, sizeof(string), sizeof(void*));
 	usize s = lex->pos;
-	w->str = lex->string.str + lex->pos;
 	do {
 		lex->pos++;
-	} while (isAlphanumerical(lread(lex)));
-	w->len = lex->pos - s;
-	Token t = getToken(w);
-	if (t.type == TOKEN_INVALID) {
-		io_write(stderr, string_build(&temp, *w, str(" is an invalid token.\n")));
+	} while (isAlphanumerical(lex->string[lex->pos]));
+	u8 tmp = lex->string[lex->pos];
+	lex->string[lex->pos] = '\0';
+	Token t = getToken(lex->string + s);
+	lex->string[lex->pos] = tmp;
+	if (unlikely(t.type == TOKEN_INVALID)) {
+		fprintf(stderr, "The token \"%*.s\", at line %llu, is invalid.\n", (int)(lex->pos - s - 1), lex->string + s, lex->line);
 	}
 	return t;
 }
