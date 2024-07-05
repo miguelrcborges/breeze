@@ -57,7 +57,7 @@ Token Lexer_nextToken(Lexer *lex) {
 			};
 		}
 		u16 *wstr = widestring_alloc + lex->alloc_pos;
-		int written = MultiByteToWideChar(CP_UTF8, 0, lex->string + s, lex->pos - s - 1, wstr, WIDESTR_ALLOC_BUFF_SIZE - lex->alloc_pos);
+		int written = MultiByteToWideChar(CP_UTF8, 0, lex->string + s, lex->pos - s, wstr, WIDESTR_ALLOC_BUFF_SIZE - lex->alloc_pos);
 		if (unlikely(written == 0)) {
 			fprintf(stderr, "Failed to convert UTF-8 string to UTF-16: %lu.\n", GetLastError());
 			exit(1);
