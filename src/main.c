@@ -45,7 +45,11 @@ Hotkey *hotkeys = NULL;
 Hotkey hotkeys_buf[MAX_HOTKEYS];
 
 #ifdef WINDOW
-int WinMain(void) {
+int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+	(void)hInstance;
+	(void)hPrevInstance;
+	(void)lpCmdLine;
+	(void)nShowCmd;
 #else
 int main(void) {
 #endif
