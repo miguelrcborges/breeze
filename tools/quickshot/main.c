@@ -56,10 +56,14 @@ void CaptureScreenshot() {
 
 int WinMainCRTStartup(void) {
 	HINSTANCE Instance = GetModuleHandleW(NULL);
-	HWND Existing = FindWindow(className, NULL);
-	if (Existing) {
-		MessageBoxA(NULL, "You're already trying to take a screenshot.", "Error", MB_OK | MB_ICONWARNING);
-		ExitProcess(0);
+	HANDLE mutex = CreateMutexA(NULL, TRUE, "quickshoot");
+	if (mutex == NULL) {
+		MessageBoxA(NULL, "Failed to initialize quickshot.", "Quickshot error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		MessageBoxA(NULL, "Quickshot is already running.", "Quickshot error", MB_ICONERROR | MB_OK);
+		return 1;
 	}
 
 	screenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);

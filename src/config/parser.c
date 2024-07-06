@@ -162,7 +162,7 @@ static void parseActionAttribute(uptr action, uptr attr) {
 			}
 			if (t.type != TOKEN_STRING) {
 				err = 1;
-				fprintf(stderr, "Expected a string, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				fprintf(stderr, "Expected a string token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
 				return;
 			}
 			hotkeys_buf[hotkeys_count].arg = (u16 *)t.value;

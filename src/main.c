@@ -4,7 +4,6 @@
 #include "action.c"
 #include "config/config.c"
 
-
 static const char *processesToKill[] = {
 	"explorer.exe",
 	"SearchApp.exe",
@@ -53,6 +52,16 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 #else
 int main(void) {
 #endif
+	HANDLE mutex = CreateMutexA(NULL, TRUE, "breeze");
+	if (mutex == NULL) {
+		MessageBoxA(NULL, "Failed to initialize breeze.", "Breeze error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		MessageBoxA(NULL, "Breeze is already running.", "Breeze error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);
 
