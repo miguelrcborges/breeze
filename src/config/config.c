@@ -1,4 +1,6 @@
 #include "c.h"
+#include <shlobj.h>
+#include <wchar.h>
 
 #include "lex.c"
 #include "map.c"
@@ -6,10 +8,18 @@
 
 static u16 explorer[] = L"explorer.exe file:";
 static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
-static u16 userapps[] = L"explorer.exe \"C:\\Users\\miguel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\"";
-static u16 systemapps[] = L"explorer.exe \"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\"";
+static u16 userapps[512];
+static u16 systemapps[512];
 
 #define VDESKTOP(n, k) {.fun = switchToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN | MOD_SHIFT}
+
+void loadUserApplicationDirs(void) {
+	u16 tmp_buff[MAX_PATH];
+	SHGetFolderPathW(NULL, CSIDL_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+	swprintf(userapps, len(userapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
+	SHGetFolderPathW(NULL, CSIDL_COMMON_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
+}
 
 static Hotkey defaultHotkeys[] = {
 	{
