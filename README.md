@@ -18,6 +18,9 @@ The configuration is pretty simple. An example one can be seen [here](breeze.con
 - `ctrl + enter` - Spawn terminal.
 - `win + a` - Open user applications folder.
 - `win + shift + a` - Open system applications folder.
+- `win + [0-9]` - Go to virtual desktop n.
+- `win + shift + [0-9]` - Send focused window to virtual desktop n.
+
 
 
 ### Roadmap
