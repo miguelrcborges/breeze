@@ -14,8 +14,12 @@ The configuration is pretty simple. An example one can be seen [here](breeze.con
 - `win + e` - Opens explorer's file explorer.
 - `win + r` - Reloads user's configuration.
 - `ctrl + alt + shift + q` - Stops breeze and restarts explorer. 
+- `win + c` - Kill focused window.
+- `ctrl + enter` - Spawn terminal.
+- `win + a` - Open user applications folder.
+- `win + shift + a` - Open system applications folder.
 
 
 ### Roadmap
-- [ ] Virtual Destkops
+- [1/2] Virtual Destkops (remains adding to configuration)
 - [ ] Application Launcher (separate tool)
