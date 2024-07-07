@@ -4,7 +4,12 @@
 #include "map.c"
 #include "parser.c"
 
-u16 explorer[] = L"explorer.exe file:";
+static u16 explorer[] = L"explorer.exe file:";
+static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
+static u16 userapps[] = L"explorer.exe \"C:\\Users\\miguel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\"";
+static u16 systemapps[] = L"explorer.exe \"C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\"";
+
+#define VDESKTOP(n, k) {.fun = switchToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN | MOD_SHIFT}
 
 static Hotkey defaultHotkeys[] = {
 	{
@@ -24,7 +29,41 @@ static Hotkey defaultHotkeys[] = {
 		.arg = NULL,
 		.key = 'Q',
 		.mod = MOD_CONTROL | MOD_SHIFT | MOD_ALT
-	}
+	},
+	{
+		.fun = kill,
+		.arg = NULL,
+		.key = 'C',
+		.mod = MOD_WIN 
+	},
+	{
+		.fun = spawn,
+		.arg = terminal,
+		.key = VK_RETURN,
+		.mod = MOD_CONTROL
+	},
+	{
+		.fun = spawn,
+		.arg = userapps,
+		.key = 'A',
+		.mod = MOD_WIN,
+	},
+	{
+		.fun = spawn,
+		.arg = systemapps,
+		.key = 'A',
+		.mod = MOD_WIN | MOD_SHIFT,
+	},
+	VDESKTOP(0, '1'),
+	VDESKTOP(1, '2'),
+	VDESKTOP(2, '3'),
+	VDESKTOP(3, '4'),
+	VDESKTOP(4, '5'),
+	VDESKTOP(5, '6'),
+	VDESKTOP(6, '7'),
+	VDESKTOP(7, '8'),
+	VDESKTOP(8, '9'),
+	VDESKTOP(9, '0'),
 };
 
 bool loadConfig(void) {
@@ -35,6 +74,10 @@ bool loadConfig(void) {
 	hotkeys_count = 0;
 
 	FILE *f = fopen("breeze.conf", "r");
+	if (f == NULL) {
+		puts("Config file not found.");
+		return 1;
+	}
 	fseek(f, 0, SEEK_END);
 	long len = ftell(f);
 	if (len >= MAX_CONFIG_FILE_SIZE) {
@@ -44,6 +87,7 @@ bool loadConfig(void) {
 	fseek(f, 0, SEEK_SET);
 	usize read = fread(file_buffer, sizeof(char), len, f);
 	file_buffer[read] = '\0';
+	fclose(f);
 
 	Lexer lex = Lexer_create(file_buffer);
 	bool err = parse(&lex);

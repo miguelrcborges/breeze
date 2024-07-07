@@ -9,6 +9,9 @@ enum CONSTANTS {
 	MAX_HOTKEYS = 1024,
 	MAX_CONFIG_FILE_SIZE = 65535,
 	WIDESTR_ALLOC_BUFF_SIZE = 10240, 
+
+	MAX_DESKTOPS = 10,
+	MAX_WINDOWS_PER_DESKTOP = 2048,
 };
 
 typedef struct {
@@ -19,11 +22,13 @@ typedef struct {
 	u32 mod;
 } Hotkey;
 
-/* action */
+/* action.c */
 void spawn(void *arg);
 void quit(void *arg);
 void reloadConfig(void *arg);
 void kill(void *arg);
+void switchToDestkop(void *arg);
+void sendToDesktop(void *arg);
 
 /* config */
 bool loadConfig(void);

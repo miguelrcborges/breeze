@@ -75,14 +75,14 @@ int main(void) {
 			ExitProcess(-1);
 		}
 
-		switch (msg.message) {
-			case WM_HOTKEY: {
+//		switch (msg.message) {
+//			case WM_HOTKEY: {
 				usize id = (usize) msg.wParam;
 				if (id <= hotkeys_count) {
 					hotkeys[id].fun(hotkeys[id].arg);
 				}
-			}
-		}
+//			}
+//		}
 	}
 
 	return 0;
