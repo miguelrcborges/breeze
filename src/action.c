@@ -21,6 +21,7 @@ void quit(void *arg) {
 	u32 code = (u32)(usize) arg;
 	u16 explorer[] = L"explorer.exe";
 	spawn(explorer);
+	revealAllWindows(NULL);
 	ExitProcess(code);
 }
 
@@ -64,3 +65,14 @@ void sendToDesktop(void *t_desktop) {
 	windows[desktop][windows_count[desktop]++] = w;
 }
 
+void revealAllWindows(void *_) {
+	for (usize i = 0; i < MAX_DESKTOPS; ++i) {
+		if (i == current_desktop) continue;
+		for (usize ii = 0; ii < windows_count[i]; ++ii) {
+			if (IsWindow(windows[i][ii])) {
+				ShowWindow(windows[i][ii], SW_SHOW);
+			}
+		}
+		windows_count[i] = 0;
+	}
+}

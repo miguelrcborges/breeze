@@ -27,8 +27,9 @@ void spawn(void *arg);
 void quit(void *arg);
 void reloadConfig(void *arg);
 void kill(void *arg);
-void switchToDestkop(void *arg);
+void switchToDesktop(void *arg);
 void sendToDesktop(void *arg);
+void revealAllWindows(void *arg);
 
 /* config */
 bool loadConfig(void);
