@@ -64,6 +64,7 @@ int main(void) {
 
 	killProcesses();
 	EnumDisplayMonitors(0, NULL, updateWorkArea, 0);
+	loadUserApplicationDirs();
 
 	if (loadConfig())
 	 	loadDefaultConfig();
@@ -72,7 +73,7 @@ int main(void) {
 	i32 ret;
 	while ((ret = GetMessageW(&msg, 0, 0, 0))) {
 		if (ret == -1) {
-			ExitProcess(-1);
+			quit(0);
 		}
 
 //		switch (msg.message) {

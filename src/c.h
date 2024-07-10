@@ -34,6 +34,7 @@ void revealAllWindows(void *arg);
 /* config */
 bool loadConfig(void);
 void loadDefaultConfig(void);
+void loadUserApplicationDirs(void);
 
 /* main.c */
 extern usize hotkeys_count;

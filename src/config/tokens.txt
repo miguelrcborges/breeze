@@ -14,9 +14,9 @@ ctrl TOKEN_MODIFIER mod_ctrl 2
 shift TOKEN_MODIFIER mod_shift 4
 win TOKEN_MODIFIER mod_win 8
 
-key TOKEN_ATTRIBUTE attr_key ATTRIBUTE_KEY
-modifier TOKEN_ATTRIBUTE attr_modifier ATTRIBUTE_MODIFIER
-arg TOKEN_ATTRIBUTE attr_arg ATTRIBUTE_ARG
+key TOKEN_ACTION_ATTRIBUTE attr_key ATTRIBUTE_KEY
+modifier TOKEN_ACTION_ATTRIBUTE attr_modifier ATTRIBUTE_MODIFIER
+arg TOKEN_ACTION_ATTRIBUTE attr_arg ATTRIBUTE_ARG
 
 0 TOKEN_KEY key_0 0x30
 1 TOKEN_KEY key_1 0x31
@@ -84,3 +84,8 @@ right TOKEN_KEY key_right 0x27
 down TOKEN_KEY key_down 0x27
 enter TOKEN_KEY enter 0x0D
 space TOKEN_KEY space 0x20
+
+desktops TOKEN_DESKTOPS desktops_tok 0
+
+send_to_desktop_modifier TOKEN_DESKTOPS_ATTRIBUTE send_to_desktop_tok ATTRIBUTE_SEND_TO_DESKTOP
+switch_to_desktop_modifier TOKEN_DESKTOPS_ATTRIBUTE switch_to_desktop_tok ATTRIBUTE_SWITCH_TO_DESKTOP

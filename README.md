@@ -24,5 +24,5 @@ The configuration is pretty simple. An example one can be seen [here](breeze.con
 
 
 ### Roadmap
-- [1/2] Virtual Destkops (remains adding to configuration)
+- [X] Virtual Destkops (remains adding to configuration)
 - [ ] Application Launcher (separate tool)

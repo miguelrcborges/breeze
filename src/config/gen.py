@@ -1,7 +1,7 @@
 import sys
 import random 
 
-MAX_ATTEMPTS = 10_000
+MAX_ATTEMPTS = 20_000
 
 random.seed(0)
 f = open('tokens.txt', 'r')

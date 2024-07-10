@@ -1,9 +1,11 @@
 #include "c.h"
 
 #include "stdio.h"
+#include <shlobj.h>
 
 static Lexer *l;
 static bool err;
+static bool has_desktops;
 
 static char *tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_INVALID] = "invalid",
@@ -14,10 +16,12 @@ static char *tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_PLUS] = "+ operator",
 	[TOKEN_EQUAL] = "= operator",
 	[TOKEN_ACTION] = "action",
-	[TOKEN_ATTRIBUTE] = "action attribute",
+	[TOKEN_ACTION_ATTRIBUTE] = "action attribute",
 	[TOKEN_KEY] = "key token",
 	[TOKEN_STRING] = "string",
-	[TOKEN_MODIFIER] = "modifier token"
+	[TOKEN_MODIFIER] = "modifier token",
+	[TOKEN_DESKTOPS] = "desktops token",
+	[TOKEN_DESKTOPS_ATTRIBUTE] = "desktops attribute token",
 };
 
 static bool actionRequiresArg[ACTION_COUNT] = {
@@ -38,18 +42,37 @@ static char *actionStrings[ACTION_COUNT] = {
 	[ACTION_KILL] = "kill",
 };
 
+typedef struct {
+	u32 send;
+	u32 _switch;
+} DesktopsMods;
+
+
 static void parseAction(uptr action);
 static void parseActionAttribute(uptr action, uptr attr);
+static void parseDesktops(void);
+static DesktopsMods parseDesktopsAttribute(DesktopsMods mods, uptr attr);
 
 bool parse(Lexer *lex) {
 	Token t;
 	err = 0;
+	has_desktops = 0;
 	l = lex;
 	for (;;) {
 		t = Lexer_nextToken(lex);
 		switch (t.type) {
 			case TOKEN_ACTION: {
 				parseAction(t.value);
+				break;
+			}
+			case TOKEN_DESKTOPS: {
+				if (has_desktops) {
+					fprintf(stderr, "Error: Two desktops scopes defined.\n");
+					err = 1;
+					goto end;
+				}
+				has_desktops = 1;
+				parseDesktops();
 				break;
 			}
 			case TOKEN_UNTERMINATED_STRING: {
@@ -82,7 +105,7 @@ static void parseAction(uptr action) {
 	for (;;) {
 		t = Lexer_nextToken(l); 
 		switch (t.type) {
-			case TOKEN_ATTRIBUTE: {
+			case TOKEN_ACTION_ATTRIBUTE: {
 				parseActionAttribute(action, t.value);
 				break;
 			}
@@ -169,4 +192,133 @@ static void parseActionAttribute(uptr action, uptr attr) {
 			return;
 		}
 	} 
+}
+
+
+static void parseDesktops(void) {
+	usize line = l->line;
+	DesktopsMods mods = {};
+	Token t = Lexer_nextToken(l);
+	if (t.type != TOKEN_LBRACE) {
+		fprintf(stderr, "Expected a left brace, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+		err = 1;
+		return;
+	}
+
+	for (;;) {
+		t = Lexer_nextToken(l); 
+		switch (t.type) {
+			case TOKEN_DESKTOPS_ATTRIBUTE: {
+				mods = parseDesktopsAttribute(mods, t.value);
+				break;
+			}
+			case TOKEN_EOF: {
+				fprintf(stderr, "Unclosed desktops scope opened at line %llu.\n", hotkeys_buf[hotkeys_count].line);
+				err = 1;
+				goto end;
+			}
+			case TOKEN_RBRACE: {
+				goto exit_loop;
+			}
+			default: {
+				fprintf(stderr, "Expected a desktops attribute, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				err = 1;
+			}
+		}
+	}
+exit_loop:
+	if (mods.send == 0 || mods._switch == 0) {
+		fprintf(stderr, "Attributes not set in desktops scope, created at line %llu.\n", line);
+		err = 1;
+		return;
+	}
+	if (mods.send == mods._switch) {
+		fprintf(stderr, "Attributes in desktops scope, created at line %llu, have the same value.\n", line);
+		err = 1;
+		return;
+	}
+	for (usize i = 0; i < 8; ++i) {
+		hotkeys_buf[hotkeys_count++] = (Hotkey) {
+			.arg = (void *)i,
+			.line = line,
+			.fun = switchToDesktop,
+			.key = '1' + i,
+			.mod = mods._switch
+		};
+		hotkeys_buf[hotkeys_count++] = (Hotkey) {
+			.arg = (void *)i,
+			.line = line,
+			.fun = sendToDesktop,
+			.key = '1' + i,
+			.mod = mods.send
+		};
+	}
+	hotkeys_buf[hotkeys_count++] = (Hotkey) {
+		.arg = (void *)9,
+		.line = line,
+		.fun = switchToDesktop,
+		.key = '0',
+		.mod = mods._switch
+	};
+	hotkeys_buf[hotkeys_count++] = (Hotkey) {
+		.arg = (void *)9,
+		.line = line,
+		.fun = sendToDesktop,
+		.key = '0',
+		.mod = mods.send
+	};
+end:
+	return;
+}
+
+static DesktopsMods parseDesktopsAttribute(DesktopsMods mods, uptr attr) {
+	Token t = Lexer_nextToken(l);
+	if (t.type != TOKEN_EQUAL) {
+		err = 1;
+		fprintf(stderr, "Expected a = operator, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+		return mods;
+	}
+	t = Lexer_nextToken(l);
+	switch (attr) {
+		case ATTRIBUTE_SEND_TO_DESKTOP: {
+			if (t.type != TOKEN_MODIFIER) {
+				err = 1;
+				fprintf(stderr, "Expected a modifier token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return mods;
+			}
+			mods.send |= t.value;
+			while (Lexer_peekToken(l).type == TOKEN_PLUS) {
+				Lexer_nextToken(l);
+				t = Lexer_nextToken(l);
+				if (t.type != TOKEN_MODIFIER) {
+					err = 1;
+					fprintf(stderr, "Expected a modifier token after +, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+					return mods;
+				}
+				mods.send |= t.value;
+			}
+			return mods;
+		}
+		case ATTRIBUTE_SWITCH_TO_DESKTOP: {
+			if (t.type != TOKEN_MODIFIER) {
+				err = 1;
+				fprintf(stderr, "Expected a modifier token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return mods;
+			}
+			mods._switch |= t.value;
+			while (Lexer_peekToken(l).type == TOKEN_PLUS) {
+				Lexer_nextToken(l);
+				t = Lexer_nextToken(l);
+				if (t.type != TOKEN_MODIFIER) {
+					err = 1;
+					fprintf(stderr, "Expected a modifier token after +, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+					return mods;
+				}
+				mods._switch |= t.value;
+			}
+			return mods;
+		}
+	} 
+
+	return mods;
 }

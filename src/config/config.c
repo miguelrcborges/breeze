@@ -11,7 +11,6 @@ static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
 static u16 userapps[512];
 static u16 systemapps[512];
 
-#define VDESKTOP(n, k) {.fun = switchToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN | MOD_SHIFT}
 
 void loadUserApplicationDirs(void) {
 	u16 tmp_buff[MAX_PATH];
@@ -21,6 +20,7 @@ void loadUserApplicationDirs(void) {
 	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
 }
 
+#define VDESKTOP(n, k) {.fun = switchToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN | MOD_SHIFT}
 static Hotkey defaultHotkeys[] = {
 	{
 		.fun = spawn,
@@ -75,6 +75,7 @@ static Hotkey defaultHotkeys[] = {
 	VDESKTOP(8, '9'),
 	VDESKTOP(9, '0'),
 };
+#undef VDESKTOP
 
 bool loadConfig(void) {
 	for (usize i = 0; i < hotkeys_count; ++i)
