@@ -25,4 +25,5 @@ The configuration is pretty simple. An example one can be seen [here](breeze.con
 
 ### Roadmap
 - [X] Virtual Destkops (remains adding to configuration)
+- [ ] System bar (clock / virtual desktop id)
 - [ ] Application Launcher (separate tool)
