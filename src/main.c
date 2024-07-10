@@ -1,5 +1,6 @@
 #include "c.h"
-#include "tlhelp32.h"
+#include <tlhelp32.h>
+#include <signal.h>
 
 #include "action.c"
 #include "config/config.c"
@@ -9,6 +10,10 @@ static const char *processesToKill[] = {
 	"SearchApp.exe",
 	"TextInputHost.exe",
 };
+
+void pleaseshowmywindowsonctrlc(int sig) {
+	quit(0);
+}
 
 static void killProcesses(void) {
 	HANDLE snapshot = CreateToolhelp32Snapshot(2, 0);
@@ -35,7 +40,8 @@ static void killProcesses(void) {
 }
 
 static BOOL __stdcall updateWorkArea(HMONITOR mon, HDC param1, LPRECT rect, LPARAM lparam) {
-	SystemParametersInfoW(0x2F, 0, rect, 1);
+	// rect->right -= BAR_WIDTH;
+	SystemParametersInfoW(SPI_SETWORKAREA, 0, rect, 1);
 	return 1;
 }
 
@@ -69,6 +75,7 @@ int main(void) {
 	if (loadConfig())
 	 	loadDefaultConfig();
 
+	signal(SIGINT, pleaseshowmywindowsonctrlc);
 	MSG msg;
 	i32 ret;
 	while ((ret = GetMessageW(&msg, 0, 0, 0))) {

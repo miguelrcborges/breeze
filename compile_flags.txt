@@ -1,1 +1,1 @@
--Ideps/lib/src
+src/main.c

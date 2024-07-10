@@ -12,6 +12,8 @@ enum CONSTANTS {
 
 	MAX_DESKTOPS = 10,
 	MAX_WINDOWS_PER_DESKTOP = 2048,
+
+	BAR_WIDTH = 48,
 };
 
 typedef struct {
