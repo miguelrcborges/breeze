@@ -237,7 +237,7 @@ exit_loop:
 		err = 1;
 		return;
 	}
-	for (usize i = 0; i < 8; ++i) {
+	for (usize i = 0; i <= 8; ++i) {
 		hotkeys_buf[hotkeys_count++] = (Hotkey) {
 			.arg = (void *)i,
 			.line = line,
