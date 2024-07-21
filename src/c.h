@@ -31,6 +31,8 @@ void reloadConfig(void *arg);
 void kill(void *arg);
 void switchToDesktop(void *arg);
 void sendToDesktop(void *arg);
+void focusNext(void *arg);
+void focusPrev(void *arg);
 void revealAllWindows(void *arg);
 
 /* config */

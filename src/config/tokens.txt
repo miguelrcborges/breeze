@@ -8,6 +8,9 @@ spawn TOKEN_ACTION tk_spawn ACTION_SPAWN
 reload TOKEN_ACTION tk_reload ACTION_RELOAD
 quit TOKEN_ACTION tk_quit ACTION_QUIT
 kill TOKEN_ACTION tk_kill ACTION_KILL
+focus_next TOKEN_ACTION tk_focus_next ACTION_FOCUS_NEXT
+focus_prev TOKEN_ACTION tk_focus_prev ACTION_FOCUS_PREV
+reveal_all TOKEN_ACTION tk_reveal_all ACTION_REVEAL_ALL
 
 alt TOKEN_MODIFIER mod_alt 1
 ctrl TOKEN_MODIFIER mod_ctrl 2

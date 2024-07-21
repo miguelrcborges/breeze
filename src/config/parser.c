@@ -33,6 +33,9 @@ static void (*actionMap[ACTION_COUNT])(void *arg) = {
 	[ACTION_RELOAD] = reloadConfig,
 	[ACTION_QUIT] = quit,
 	[ACTION_KILL] = kill,
+	[ACTION_FOCUS_NEXT] = focusNext,
+	[ACTION_FOCUS_PREV] = focusPrev,
+	[ACTION_REVEAL_ALL] = revealAllWindows,
 };
 
 static char *actionStrings[ACTION_COUNT] = {
@@ -40,6 +43,9 @@ static char *actionStrings[ACTION_COUNT] = {
 	[ACTION_RELOAD] = "reload",
 	[ACTION_QUIT] = "quit",
 	[ACTION_KILL] = "kill",
+	[ACTION_FOCUS_NEXT] = "focus next",
+	[ACTION_FOCUS_PREV] = "focus previous",
+	[ACTION_REVEAL_ALL] = "reveal all windows",
 };
 
 typedef struct {
