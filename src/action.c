@@ -1,5 +1,4 @@
 #include "c.h"
-//#include <wchar.h>
 
 static HWND focused_window[MAX_DESKTOPS];
 static HWND windows[MAX_DESKTOPS][MAX_WINDOWS_PER_DESKTOP];
@@ -83,26 +82,23 @@ void revealAllWindows(void *_) {
 }
 
 void focusNext(void *_) {
-	u16 buf[1024];
 	HWND w = GetForegroundWindow();
 	w = GetWindow(w, GW_HWNDLAST);
-	while (!IsWindowVisible(w)) {
-		w = GetWindow(w, GW_HWNDPREV);
+	while (1) {
 		if (unlikely(w == NULL)) return;
+		u32 styles = GetWindowLongW(w, GWL_STYLE);
+		u32 ex_styles = GetWindowLongW(w, GWL_EXSTYLE);
+		if ((styles & WS_VISIBLE) && ((ex_styles & WS_EX_NOACTIVATE) ^ WS_EX_NOACTIVATE)) break;
+		w = GetWindow(w, GW_HWNDPREV);
 	}
-	//GetWindowTextW(w, buf, len(buf));
-	//wprintf(L"%s\n", buf);
 	SetForegroundWindow(w);
 }
 
 void focusPrev(void *_) {
-	u16 buf[1024];
 	HWND w = GetForegroundWindow();
 	do {
 		w = GetWindow(w, GW_HWNDNEXT);
 		if (unlikely(w == NULL)) return;
 	} while (!IsWindowVisible(w));
-	//GetWindowTextW(w, buf, len(buf));
-	//wprintf(L"%s\n", buf);
 	SetForegroundWindow(w);
 }

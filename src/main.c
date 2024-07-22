@@ -9,6 +9,7 @@ static const char *processesToKill[] = {
 	"explorer.exe",
 	"SearchApp.exe",
 	"TextInputHost.exe",
+	"ShellExperienceHost.exe",
 };
 
 void pleaseshowmywindowsonctrlc(int sig) {
