@@ -44,5 +44,6 @@ void loadUserApplicationDirs(void);
 extern usize hotkeys_count;
 extern Hotkey hotkeys_buf[MAX_HOTKEYS];
 extern Hotkey *hotkeys;
+extern HWND bar_window;
 
 #endif

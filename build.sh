@@ -1,4 +1,4 @@
-LINKS="-lkernel32 -luser32 -lntdll"
+LINKS="-luser32 -lgdi32"
 
 if [ -z "$CC" ]
 then
