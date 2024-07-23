@@ -59,7 +59,9 @@ usize hotkeys_count = 0;
 Hotkey *hotkeys = NULL;
 Hotkey hotkeys_buf[MAX_HOTKEYS];
 HWND bar_window;
+HFONT default_bar_font;
 HFONT bar_font;
+usize bar_font_height;
 COLORREF background;
 COLORREF foreground;
 
@@ -99,6 +101,12 @@ int main(void) {
 		return 1;
 	}
 
+	default_bar_font = CreateFontW(BAR_DEFAULT_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, default_bar_font_str);
+	if (default_bar_font == NULL) {
+		MessageBoxA(NULL, "Faield to create a fallback font using a font already preinstalled.", "Breeze error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+
 	bar_window = CreateWindowExW(
 		WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
 		L"breeze-bar",
@@ -118,7 +126,6 @@ int main(void) {
 	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
 	loadUserApplicationDirs();
 
-	bar_font = CreateFontW(BAR_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"Segoe UI");
 
 	reloadConfig(0);
 
@@ -132,7 +139,8 @@ int main(void) {
 	}
 
 	KillTimer(bar_window, timer);
-	DeleteObject(bar_font);
+	if (bar_font != default_bar_font) DeleteObject(bar_font);
+	DeleteObject(default_bar_font);
 	return 0;
 }
 
@@ -169,7 +177,7 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 			textRect.bottom -= BAR_VERTICAL_PAD;
 			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
 			sprintf(buf, "%02hu", lt.wHour);
-			textRect.bottom -= BAR_FONT_HEIGHT;
+			textRect.bottom -= bar_font_height;
 			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
 
 			EndPaint(hWnd, &ps);

@@ -108,6 +108,20 @@ Token Lexer_nextToken(Lexer *lex) {
 			.type = TOKEN_COLOR,
 			.value = color
 		};
+	} else if (ch >= '0' && ch <= '9') {
+		uptr num = ch - '0';
+		lex->pos++;
+		u8 ch = lex->string[lex->pos];
+		while (ch >= '0' && ch <= '9') {
+			num *= 10;
+			num += ch - '0';
+			lex->pos++;
+			ch = lex->string[lex->pos];
+		}
+		return (Token) {
+			.type = TOKEN_NUMBER,
+			.value = num
+		};
 	}
 	usize s = lex->pos;
 	do {

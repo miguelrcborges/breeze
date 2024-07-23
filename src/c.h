@@ -14,12 +14,14 @@ enum CONSTANTS {
 	MAX_WINDOWS_PER_DESKTOP = 2048,
 
 	BAR_WIDTH = 48,
-	BAR_FONT_HEIGHT = 28,
 	BAR_VERTICAL_PAD = 16,
 	BAR_INVALIDATE_CLOCK_DURATION = 5000, // milis
+	BAR_DEFAULT_FONT_HEIGHT = 26,
 	BAR_DEFAULT_BACKGROUND = 0x181818, // bbggrr
 	BAR_DEFAULT_FOREGROUND = 0xefe4e4, // bbggrr
 };
+
+const u16 *default_bar_font_str = L"Tahoma";
 
 typedef struct {
 	void (*fun)(void *arg);
@@ -50,7 +52,9 @@ extern usize hotkeys_count;
 extern Hotkey hotkeys_buf[MAX_HOTKEYS];
 extern Hotkey *hotkeys;
 extern HWND bar_window;
+extern HFONT default_bar_font;
 extern HFONT bar_font;
+extern usize bar_font_height;
 extern COLORREF background;
 extern COLORREF foreground;
 

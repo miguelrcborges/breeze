@@ -27,8 +27,6 @@ void quit(void *arg) {
 }
 
 void reloadConfig(void *arg) {
-	foreground = BAR_DEFAULT_FOREGROUND;
-	background = BAR_DEFAULT_BACKGROUND;
 	if (loadConfig())
 		loadDefaultConfig();
 	InvalidateRect(bar_window, NULL, TRUE);

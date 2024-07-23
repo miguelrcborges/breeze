@@ -20,6 +20,14 @@ void loadUserApplicationDirs(void) {
 	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
 }
 
+static void setBarDefaults() {
+	if (bar_font != default_bar_font) DeleteObject(bar_font);
+	foreground = BAR_DEFAULT_FOREGROUND;
+	background = BAR_DEFAULT_BACKGROUND;
+	bar_font_height = BAR_DEFAULT_FONT_HEIGHT;
+	bar_font = default_bar_font;
+}
+
 #define VDESKTOP(n) {.fun = switchToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN | MOD_SHIFT}
 static Hotkey defaultHotkeys[] = {
 	{
@@ -100,6 +108,7 @@ bool loadConfig(void) {
 	file_buffer[read] = '\0';
 	fclose(f);
 
+	setBarDefaults();
 	Lexer lex = Lexer_create(file_buffer);
 	bool err = parse(&lex);
 	if (err) {
@@ -140,6 +149,5 @@ void loadDefaultConfig() {
 	}
 	hotkeys = defaultHotkeys;
 	hotkeys_count = len(defaultHotkeys);
-	foreground = BAR_DEFAULT_FOREGROUND;
-	background = BAR_DEFAULT_BACKGROUND;
+	setBarDefaults();
 }
