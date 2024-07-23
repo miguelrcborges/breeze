@@ -243,36 +243,22 @@ exit_loop:
 		err = 1;
 		return;
 	}
-	for (usize i = 0; i <= 8; ++i) {
+	for (usize i = 0; i <= 9; ++i) {
 		hotkeys_buf[hotkeys_count++] = (Hotkey) {
 			.arg = (void *)i,
 			.line = line,
 			.fun = switchToDesktop,
-			.key = '1' + i,
+			.key = '0' + i,
 			.mod = mods._switch
 		};
 		hotkeys_buf[hotkeys_count++] = (Hotkey) {
 			.arg = (void *)i,
 			.line = line,
 			.fun = sendToDesktop,
-			.key = '1' + i,
+			.key = '0' + i,
 			.mod = mods.send
 		};
 	}
-	hotkeys_buf[hotkeys_count++] = (Hotkey) {
-		.arg = (void *)9,
-		.line = line,
-		.fun = switchToDesktop,
-		.key = '0',
-		.mod = mods._switch
-	};
-	hotkeys_buf[hotkeys_count++] = (Hotkey) {
-		.arg = (void *)9,
-		.line = line,
-		.fun = sendToDesktop,
-		.key = '0',
-		.mod = mods.send
-	};
 end:
 	return;
 }

@@ -1,6 +1,6 @@
 # quickshot
 
-Minimal screenshotting tool with the goal of replace the one included in the window's shell.
+Minimal screenshotting tool with the goal of replacing the one included in the window's shell.
 
 Regular version supports every windows version from Vista and Server 2008.
 

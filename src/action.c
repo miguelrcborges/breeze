@@ -3,7 +3,7 @@
 static HWND focused_window[MAX_DESKTOPS];
 static HWND windows[MAX_DESKTOPS][MAX_WINDOWS_PER_DESKTOP];
 static usize windows_count[MAX_DESKTOPS];
-static usize current_desktop;
+static usize current_desktop = 1;
 
 void spawn(void *arg) {
 	u16 *command = arg;
