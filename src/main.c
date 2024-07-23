@@ -164,10 +164,10 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 
 			SYSTEMTIME lt;
 			GetLocalTime(&lt);
-			sprintf(buf, "%hu", lt.wMinute);
+			sprintf(buf, "%02hu", lt.wMinute);
 			textRect.bottom -= BAR_VERTICAL_PAD;
 			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
-			sprintf(buf, "%hu", lt.wHour);
+			sprintf(buf, "%02hu", lt.wHour);
 			textRect.bottom -= BAR_FONT_HEIGHT;
 			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
 
