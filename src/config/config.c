@@ -20,7 +20,7 @@ void loadUserApplicationDirs(void) {
 	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
 }
 
-#define VDESKTOP(n, k) {.fun = switchToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = k, .mod = MOD_WIN | MOD_SHIFT}
+#define VDESKTOP(n) {.fun = switchToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN | MOD_SHIFT}
 static Hotkey defaultHotkeys[] = {
 	{
 		.fun = spawn,
@@ -64,16 +64,16 @@ static Hotkey defaultHotkeys[] = {
 		.key = 'A',
 		.mod = MOD_WIN | MOD_SHIFT,
 	},
-	VDESKTOP(1, '1'),
-	VDESKTOP(2, '2'),
-	VDESKTOP(3, '3'),
-	VDESKTOP(4, '4'),
-	VDESKTOP(5, '5'),
-	VDESKTOP(6, '6'),
-	VDESKTOP(7, '7'),
-	VDESKTOP(8, '8'),
-	VDESKTOP(9, '9'),
-	VDESKTOP(0, '0'),
+	VDESKTOP(1),
+	VDESKTOP(2),
+	VDESKTOP(3),
+	VDESKTOP(4),
+	VDESKTOP(5),
+	VDESKTOP(6),
+	VDESKTOP(7),
+	VDESKTOP(8),
+	VDESKTOP(9),
+	VDESKTOP(0),
 };
 #undef VDESKTOP
 
