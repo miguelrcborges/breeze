@@ -16,8 +16,9 @@ enum CONSTANTS {
 	BAR_WIDTH = 48,
 	BAR_FONT_HEIGHT = 28,
 	BAR_VERTICAL_PAD = 16,
-
 	BAR_INVALIDATE_CLOCK_DURATION = 5000, // milis
+	BAR_DEFAULT_BACKGROUND = 0x181818, // bbggrr
+	BAR_DEFAULT_FOREGROUND = 0xefe4e4, // bbggrr
 };
 
 typedef struct {
@@ -50,5 +51,7 @@ extern Hotkey hotkeys_buf[MAX_HOTKEYS];
 extern Hotkey *hotkeys;
 extern HWND bar_window;
 extern HFONT bar_font;
+extern COLORREF background;
+extern COLORREF foreground;
 
 #endif

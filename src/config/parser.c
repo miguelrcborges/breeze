@@ -6,6 +6,7 @@
 static Lexer *l;
 static bool err;
 static bool has_desktops;
+static bool has_bar;
 
 static char *tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_INVALID] = "invalid",
@@ -22,6 +23,10 @@ static char *tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_MODIFIER] = "modifier token",
 	[TOKEN_DESKTOPS] = "desktops token",
 	[TOKEN_DESKTOPS_ATTRIBUTE] = "desktops attribute token",
+	[TOKEN_BAR] = "bar token",
+	[TOKEN_BAR_ATTRIBUTE] = "bar attribute token",
+	[TOKEN_COLOR] = "color",
+	[TOKEN_INVALID_COLOR] = "invalid color",
 };
 
 static bool actionRequiresArg[ACTION_COUNT] = {
@@ -58,11 +63,14 @@ static void parseAction(uptr action);
 static void parseActionAttribute(uptr action, uptr attr);
 static void parseDesktops(void);
 static DesktopsMods parseDesktopsAttribute(DesktopsMods mods, uptr attr);
+static void parseBar(void);
+static void parseBarAttribute(uptr attr);
 
 bool parse(Lexer *lex) {
 	Token t;
 	err = 0;
 	has_desktops = 0;
+	has_bar = 0;
 	l = lex;
 	for (;;) {
 		t = Lexer_nextToken(lex);
@@ -81,16 +89,21 @@ bool parse(Lexer *lex) {
 				parseDesktops();
 				break;
 			}
-			case TOKEN_UNTERMINATED_STRING: {
-				fprintf(stderr, "Unterminated string in the configuration file at an action position.\n");
-				err = 1;
-				goto end;
+			case TOKEN_BAR: {
+				if (has_bar) {
+					fprintf(stderr, "Error: Two bar scopes defined.\n");
+					err = 1;
+					goto end;
+				}
+				has_bar = 1;
+				parseBar();
+				break;
 			}
 			case TOKEN_EOF: {
 				goto end;
 			}
 			default: {
-				fprintf(stderr, "Expected action, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				fprintf(stderr, "The %s, defined at line %llu, is not a valid top level token.\n", tokenStrings[t.type], l->line);
 				err = 1;
 			}
 		}
@@ -313,4 +326,70 @@ static DesktopsMods parseDesktopsAttribute(DesktopsMods mods, uptr attr) {
 	} 
 
 	return mods;
+}
+
+
+static void parseBar(void) {
+	usize line = l->line;
+	Token t = Lexer_nextToken(l);
+	if (t.type != TOKEN_LBRACE) {
+		fprintf(stderr, "Expected a left brace, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+		err = 1;
+		return;
+	}
+
+	for (;;) {
+		t = Lexer_nextToken(l); 
+		switch (t.type) {
+			case TOKEN_BAR_ATTRIBUTE: {
+				parseBarAttribute(t.value);
+				break;
+			}
+			case TOKEN_EOF: {
+				fprintf(stderr, "Unclosed desktops scope opened at line %llu.\n", hotkeys_buf[hotkeys_count].line);
+				err = 1;
+				goto end;
+			}
+			case TOKEN_RBRACE: {
+				goto end;
+			}
+			default: {
+				fprintf(stderr, "Expected a bar attribute, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				err = 1;
+			}
+		}
+	}
+end:
+	return;
+}
+
+static void parseBarAttribute(uptr attr) {
+	Token t = Lexer_nextToken(l);
+	if (t.type != TOKEN_EQUAL) {
+		err = 1;
+		fprintf(stderr, "Expected a = operator, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+		return;
+	}
+	t = Lexer_nextToken(l);
+	switch (attr) {
+		case ATTRIBUTE_FOREGROUND: {
+			if (t.type != TOKEN_COLOR) {
+				err = 1;
+				fprintf(stderr, "Expected a modifier token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return;
+			}
+			foreground = t.value;
+			return;
+		}
+		case ATTRIBUTE_BACKGROUND: {
+			if (t.type != TOKEN_COLOR) {
+				err = 1;
+				fprintf(stderr, "Expected a modifier token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return;
+			}
+			background = t.value;
+			return;
+		}
+	} 
+	return;
 }

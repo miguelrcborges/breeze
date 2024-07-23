@@ -140,4 +140,6 @@ void loadDefaultConfig() {
 	}
 	hotkeys = defaultHotkeys;
 	hotkeys_count = len(defaultHotkeys);
+	foreground = BAR_DEFAULT_FOREGROUND;
+	background = BAR_DEFAULT_BACKGROUND;
 }

@@ -11,6 +11,13 @@ static bool isAlphanumerical(u8 ch) {
 		ch == '_';
 }
 
+static bool isValidColorComponent(u8 ch) {
+	return ch >= 'a' && ch <= 'f' ||
+		ch >= 'A' && ch <= 'F' ||
+		ch >= '0' && ch <= '9';
+}
+
+
 static void skipIgnore(Lexer *lex) {
 	static bool skipTable[(1 << 8) - 1] = {
 		['\r'] = 1,
@@ -73,6 +80,33 @@ Token Lexer_nextToken(Lexer *lex) {
 		return (Token) {
 			.type = TOKEN_EOF,
 			.value = 0 
+		};
+	} else if (ch == '#') {
+		uptr color = 0;
+		usize count = 0;
+		for (usize count = 0; count < 6; ++count) {
+			lex->pos++;
+			u8 ch = lex->string[lex->pos];
+			if (!isValidColorComponent(ch)) {
+				return (Token) {
+					.type = TOKEN_INVALID_COLOR,
+					.value = 0
+				};
+			}
+			color <<= 4;
+			if (ch >= 'a' && ch <= 'f')
+				color |= ch - 'a' + 10;
+			else if (ch >= 'A' && ch <= 'F')
+				color |= ch - 'A' + 10;
+			else
+				color |= ch - '0';
+		}
+		lex->pos++;
+		// convert rrggbb to bbggrr
+		color = ((color & 0xff0000) >> 16) | (color & 0x00ff00) | ((color & 0x0000ff) << 16);
+		return (Token) {
+			.type = TOKEN_COLOR,
+			.value = color
 		};
 	}
 	usize s = lex->pos;

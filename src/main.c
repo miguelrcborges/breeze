@@ -60,6 +60,8 @@ Hotkey *hotkeys = NULL;
 Hotkey hotkeys_buf[MAX_HOTKEYS];
 HWND bar_window;
 HFONT bar_font;
+COLORREF background;
+COLORREF foreground;
 
 static void CALLBACK invalidateBar(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
 	InvalidateRect(bar_window, NULL, TRUE);
@@ -118,8 +120,7 @@ int main(void) {
 
 	bar_font = CreateFontW(BAR_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"Segoe UI");
 
-	if (loadConfig())
-	 	loadDefaultConfig();
+	reloadConfig(0);
 
 	signal(SIGINT, pleaseshowmywindowsonctrlc);
 
@@ -127,7 +128,7 @@ int main(void) {
 	i32 ret;
 	while ((ret = GetMessageW(&msg, 0, 0, 0)) > 0) {
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		DispatchMessageW(&msg);
 	}
 
 	KillTimer(bar_window, timer);
@@ -150,14 +151,14 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 			char buf[16];
 			HDC dc = BeginPaint(hWnd, &ps);
 
-			HBRUSH brush = CreateSolidBrush(0x282828);
+			HBRUSH brush = CreateSolidBrush(background);
 			FillRect(dc, &(ps.rcPaint), brush);
 			DeleteObject(brush);
 
 			sprintf(buf, "%zu", current_desktop);
 			SetBkMode(dc, TRANSPARENT);
 			SelectObject(dc, bar_font);
-			SetTextColor(dc, 0x98bed4);
+			SetTextColor(dc, foreground);
 			RECT textRect = ps.rcPaint;
 			textRect.top += BAR_VERTICAL_PAD;
 			DrawTextA(dc, buf, -1, &textRect, DT_TOP | DT_CENTER);
@@ -175,7 +176,7 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 			break;
 		}
 		default: {
-			result = DefWindowProc(hWnd, uMsg, wParam, lParam);
+			result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
 	}
 	return result;

@@ -92,3 +92,8 @@ desktops TOKEN_DESKTOPS desktops_tok 0
 
 send_to_desktop_modifier TOKEN_DESKTOPS_ATTRIBUTE send_to_desktop_tok ATTRIBUTE_SEND_TO_DESKTOP
 switch_to_desktop_modifier TOKEN_DESKTOPS_ATTRIBUTE switch_to_desktop_tok ATTRIBUTE_SWITCH_TO_DESKTOP
+
+bar TOKEN_BAR bar_tok 0
+
+background TOKEN_BAR_ATTRIBUTE background_tok ATTRIBUTE_BACKGROUND
+foreground TOKEN_BAR_ATTRIBUTE foreground_tok ATTRIBUTE_FOREGROUND

@@ -12,6 +12,7 @@ hashtable_len = 1
 while hashtable_len < len(tokens):
     hashtable_len <<= 1
 hashtable_len <<= 1
+hashtable_len <<= 1
 bits = hashtable_len - 1
 
 
