@@ -14,6 +14,10 @@ enum CONSTANTS {
 	MAX_WINDOWS_PER_DESKTOP = 2048,
 
 	BAR_WIDTH = 48,
+	BAR_FONT_HEIGHT = 28,
+	BAR_VERTICAL_PAD = 16,
+
+	BAR_INVALIDATE_CLOCK_DURATION = 5000, // milis
 };
 
 typedef struct {
@@ -45,5 +49,6 @@ extern usize hotkeys_count;
 extern Hotkey hotkeys_buf[MAX_HOTKEYS];
 extern Hotkey *hotkeys;
 extern HWND bar_window;
+extern HFONT bar_font;
 
 #endif

@@ -59,6 +59,7 @@ void switchToDesktop(void *t_desktop) {
 		SetForegroundWindow(focused_window[desktop]);
 	}
 	current_desktop = desktop;
+	InvalidateRect(bar_window, NULL, TRUE);
 }
 
 void sendToDesktop(void *t_desktop) {

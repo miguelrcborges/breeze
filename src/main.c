@@ -59,6 +59,11 @@ usize hotkeys_count = 0;
 Hotkey *hotkeys = NULL;
 Hotkey hotkeys_buf[MAX_HOTKEYS];
 HWND bar_window;
+HFONT bar_font;
+
+static void CALLBACK invalidateBar(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
+	InvalidateRect(bar_window, NULL, TRUE);
+}
 
 static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -84,6 +89,7 @@ int main(void) {
 	WNDCLASSW barClass = {
 		.hInstance = hInstance,
 		.lpszClassName = L"breeze-bar",
+		.hCursor = LoadCursor(NULL, IDC_ARROW),
 		.lpfnWndProc = barHandler
 	};
 	if (!RegisterClassW(&barClass)) {
@@ -103,10 +109,14 @@ int main(void) {
 		NULL
 	);
 
+	u64 timer = SetTimer(bar_window, 1, BAR_INVALIDATE_CLOCK_DURATION, invalidateBar);
+
 	killProcesses();
 	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
 	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
 	loadUserApplicationDirs();
+
+	bar_font = CreateFontW(BAR_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"Segoe UI");
 
 	if (loadConfig())
 	 	loadDefaultConfig();
@@ -120,6 +130,8 @@ int main(void) {
 		DispatchMessage(&msg);
 	}
 
+	KillTimer(bar_window, timer);
+	DeleteObject(bar_font);
 	return 0;
 }
 
@@ -135,12 +147,30 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 		}
 		case WM_PAINT: {
 			PAINTSTRUCT ps;
+			char buf[16];
 			HDC dc = BeginPaint(hWnd, &ps);
-			int x = ps.rcPaint.left;
-			int y = ps.rcPaint.top;
-			int w = ps.rcPaint.right - ps.rcPaint.left;
-			int h = ps.rcPaint.bottom - ps.rcPaint.top;
-			PatBlt(dc, x, y, w, h, WHITENESS);
+
+			HBRUSH brush = CreateSolidBrush(0x282828);
+			FillRect(dc, &(ps.rcPaint), brush);
+			DeleteObject(brush);
+
+			sprintf(buf, "%zu", current_desktop);
+			SetBkMode(dc, TRANSPARENT);
+			SelectObject(dc, bar_font);
+			SetTextColor(dc, 0x98bed4);
+			RECT textRect = ps.rcPaint;
+			textRect.top += BAR_VERTICAL_PAD;
+			DrawTextA(dc, buf, -1, &textRect, DT_TOP | DT_CENTER);
+
+			SYSTEMTIME lt;
+			GetLocalTime(&lt);
+			sprintf(buf, "%hu", lt.wMinute);
+			textRect.bottom -= BAR_VERTICAL_PAD;
+			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
+			sprintf(buf, "%hu", lt.wHour);
+			textRect.bottom -= BAR_FONT_HEIGHT;
+			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
+
 			EndPaint(hWnd, &ps);
 			break;
 		}
