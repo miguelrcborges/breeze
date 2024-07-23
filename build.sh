@@ -10,4 +10,4 @@ then
 	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1"
 fi
 
-$CC $LINKS $CFLAGS src/main.c -o breeze.exe
+$CC $LINKS $CFLAGS src/main.c -o breeze-mingw-ucrt.exe

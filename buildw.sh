@@ -12,4 +12,4 @@ fi
 
 CFLAGS="-DWINDOW -mwindows"
 
-$CC $LINKS $CFLAGS src/main.c -o breezew.exe
+$CC $LINKS $CFLAGS src/main.c -o breezew-mingw-ucrt.exe
