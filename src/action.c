@@ -41,7 +41,7 @@ static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lp
 				hours_rect.top = hours_rect.bottom - bar_font_height;
 
 				clock_rect.top = hours_rect.top;
-				clock_rect.bottom = hours_rect.bottom;
+				clock_rect.bottom = minutes_rect.bottom;
 				drawBar = drawVertical24hClock;
 				break;
 			};
@@ -89,7 +89,7 @@ static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lp
 				hours_rect.top = hours_rect.bottom - bar_font_height;
 
 				clock_rect.top = hours_rect.top;
-				clock_rect.bottom = hours_rect.bottom;
+				clock_rect.bottom = minutes_rect.bottom;
 				drawBar = drawVertical24hClock;
 				break;
 			};
