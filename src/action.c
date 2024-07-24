@@ -5,6 +5,21 @@ static HWND windows[MAX_DESKTOPS][MAX_WINDOWS_PER_DESKTOP];
 static usize windows_count[MAX_DESKTOPS];
 static usize current_desktop = 1;
 
+static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lparam) {
+	HMONITOR main_mon = (HMONITOR) lparam;
+	if (mon == main_mon) {
+		rect->right -= bar_width;
+		SetWindowPos(
+			bar_window,
+			0,
+			rect->right, rect->top, bar_width, rect->bottom - rect->top,
+			SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOSENDCHANGING
+		);
+	}
+	SystemParametersInfoW(SPI_SETWORKAREA, 0, rect, 1);
+	return 1;
+}
+
 void spawn(void *arg) {
 	u16 *command = arg;
 
@@ -29,6 +44,9 @@ void quit(void *arg) {
 void reloadConfig(void *arg) {
 	if (loadConfig())
 		loadDefaultConfig();
+
+	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
+	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
 	InvalidateRect(bar_window, NULL, TRUE);
 }
 

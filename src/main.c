@@ -40,20 +40,6 @@ static void killProcesses(void) {
 	}
 }
 
-static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lparam) {
-	HMONITOR main_mon = (HMONITOR) lparam;
-	if (mon == main_mon) {
-		rect->right -= BAR_WIDTH;
-		SetWindowPos(
-			bar_window,
-			0,
-			rect->right, rect->top, BAR_WIDTH, rect->bottom - rect->top,
-			SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOSENDCHANGING
-		);
-	}
-	SystemParametersInfoW(SPI_SETWORKAREA, 0, rect, 1);
-	return 1;
-}
 
 usize hotkeys_count = 0;
 Hotkey *hotkeys = NULL;
@@ -64,6 +50,9 @@ HFONT bar_font;
 usize bar_font_height;
 COLORREF background;
 COLORREF foreground;
+usize bar_position;
+usize bar_pad;
+usize bar_width;
 
 static void CALLBACK invalidateBar(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
 	InvalidateRect(bar_window, NULL, TRUE);
@@ -122,11 +111,7 @@ int main(void) {
 	u64 timer = SetTimer(bar_window, 1, BAR_INVALIDATE_CLOCK_DURATION, invalidateBar);
 
 	killProcesses();
-	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
-	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
 	loadUserApplicationDirs();
-
-
 	reloadConfig(0);
 
 	signal(SIGINT, pleaseshowmywindowsonctrlc);
@@ -168,13 +153,13 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 			SelectObject(dc, bar_font);
 			SetTextColor(dc, foreground);
 			RECT textRect = ps.rcPaint;
-			textRect.top += BAR_VERTICAL_PAD;
+			textRect.top += bar_pad;
 			DrawTextA(dc, buf, -1, &textRect, DT_TOP | DT_CENTER);
 
 			SYSTEMTIME lt;
 			GetLocalTime(&lt);
 			sprintf(buf, "%02hu", lt.wMinute);
-			textRect.bottom -= BAR_VERTICAL_PAD;
+			textRect.bottom -= bar_pad;
 			DrawTextA(dc, buf, -1, &textRect, DT_BOTTOM | DT_CENTER | DT_SINGLELINE);
 			sprintf(buf, "%02hu", lt.wHour);
 			textRect.bottom -= bar_font_height;

@@ -28,6 +28,7 @@ static char *tokenStrings[TOKEN_COUNT] = {
 	[TOKEN_COLOR] = "color",
 	[TOKEN_INVALID_COLOR] = "invalid color",
 	[TOKEN_NUMBER] = "number",
+	[TOKEN_POSITION] = "position",
 };
 
 static bool actionRequiresArg[ACTION_COUNT] = {
@@ -165,28 +166,22 @@ static void parseActionAttribute(uptr action, uptr attr) {
 	switch (attr) {
 		case ATTRIBUTE_KEY: {
 			if (t.type == TOKEN_KEY) {
-				u32 tmpkey = t.value;
-				if (Lexer_peekToken(l).type == TOKEN_PLUS) {
-					err = 1;
-					fprintf(stderr, "You can only assign one key per hotkey. Error at line %llu.\n", l->line);
-					return;
-				}
-				hotkeys_buf[hotkeys_count].key = tmpkey;
-				return;
+				hotkeys_buf[hotkeys_count].key = t.value;
 			} else if (t.type == TOKEN_NUMBER && t.value <= 9) {
-				u32 tmpkey = t.value + '0';
-				if (Lexer_peekToken(l).type == TOKEN_PLUS) {
-					err = 1;
-					fprintf(stderr, "You can only assign one key per hotkey. Error at line %llu.\n", l->line);
-					return;
-				}
-				hotkeys_buf[hotkeys_count].key = tmpkey;
-				return;
+				hotkeys_buf[hotkeys_count].key = t.value + '0';
+			} else if (t.type == TOKEN_POSITION) {
+				hotkeys_buf[hotkeys_count].key = t.value + VK_LEFT;
 			} else {
 				err = 1;
 				fprintf(stderr, "Expected a key token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
 				return;
 			}
+			if (Lexer_peekToken(l).type == TOKEN_PLUS) {
+				err = 1;
+				fprintf(stderr, "You can only assign one key per hotkey. Error at line %llu.\n", l->line);
+				return;
+			}
+			break;
 		}
 		case ATTRIBUTE_MODIFIER: {
 			if (t.type != TOKEN_MODIFIER) {
@@ -418,6 +413,33 @@ static const u16 *parseBarAttribute(const u16 *font_str, uptr attr) {
 				return font_str;
 			}
 			bar_font_height = t.value;
+			return font_str;
+		}
+		case ATTRIBUTE_POSITION: {
+			if (t.type != TOKEN_POSITION) {
+				err = 1;
+				fprintf(stderr, "Expected a number token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return font_str;
+			}
+			bar_position = t.value;
+			return font_str;
+		}
+		case ATTRIBUTE_BAR_WIDTH: {
+		  if (t.type != TOKEN_NUMBER) {
+			  err = 1;
+			  fprintf(stderr, "Expected a number token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+			  return font_str;
+		  }
+		  bar_width = t.value;
+		  return font_str;
+		}
+		case ATTRIBUTE_BAR_PAD: {
+			if (t.type != TOKEN_NUMBER) {
+				err = 1;
+				fprintf(stderr, "Expected a number token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				return font_str;
+			}
+			bar_pad = t.value;
 			return font_str;
 		}
 	} 

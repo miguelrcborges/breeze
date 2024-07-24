@@ -71,10 +71,6 @@ f21 TOKEN_KEY key_f21 0x84
 f22 TOKEN_KEY key_f22 0x85
 f23 TOKEN_KEY key_f23 0x86
 f24 TOKEN_KEY key_f24 0x87
-left TOKEN_KEY key_left 0x25
-up TOKEN_KEY key_up 0x26
-right TOKEN_KEY key_right 0x27
-down TOKEN_KEY key_down 0x27
 enter TOKEN_KEY enter 0x0D
 space TOKEN_KEY space 0x20
 
@@ -89,3 +85,14 @@ background TOKEN_BAR_ATTRIBUTE background_tok ATTRIBUTE_BACKGROUND
 foreground TOKEN_BAR_ATTRIBUTE foreground_tok ATTRIBUTE_FOREGROUND
 font TOKEN_BAR_ATTRIBUTE font_tok ATTRIBUTE_FONT
 font_size TOKEN_BAR_ATTRIBUTE font_size_tok ATTRIBUTE_FONT_SIZE
+position TOKEN_BAR_ATTRIBUTE position_tok ATTRIBUTE_POSITION
+bar_position TOKEN_BAR_ATTRIBUTE position_tok ATTRIBUTE_POSITION
+bar_width TOKEN_BAR_ATTRIBUTE bar_width_tok ATTRIBUTE_BAR_WIDTH
+bar_pad TOKEN_BAR_ATTRIBUTE bar_pad_tok ATTRIBUTE_BAR_PAD
+
+left TOKEN_POSITION position_left_tok BAR_LEFT
+up TOKEN_POSITION position_up_tok BAR_TOP
+right TOKEN_POSITION position_right_tok BAR_RIGHT
+down TOKEN_POSITION position_down_tok BAR_BOTTOM
+top TOKEN_POSITION position_top_tok BAR_TOP
+bottom TOKEN_POSITION position_bottom_tok BAR_BOTTOM

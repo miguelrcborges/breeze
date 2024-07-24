@@ -26,6 +26,9 @@ static void setBarDefaults() {
 	background = BAR_DEFAULT_BACKGROUND;
 	bar_font_height = BAR_DEFAULT_FONT_HEIGHT;
 	bar_font = default_bar_font;
+	bar_position = BAR_LEFT;
+	bar_width = BAR_DEFAULT_WIDTH;
+	bar_pad = BAR_DEFAULT_PAD; 
 }
 
 #define VDESKTOP(n) {.fun = switchToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN}, {.fun = sendToDesktop, .arg = (void *) n, .key = ('0'+n), .mod = MOD_WIN | MOD_SHIFT}
