@@ -26,7 +26,7 @@ static void setBarDefaults() {
 	background = BAR_DEFAULT_BACKGROUND;
 	bar_font_height = BAR_DEFAULT_FONT_HEIGHT;
 	bar_font = default_bar_font;
-	bar_position = BAR_LEFT;
+	bar_position = BAR_RIGHT;
 	bar_width = BAR_DEFAULT_WIDTH;
 	bar_pad = BAR_DEFAULT_PAD; 
 }

@@ -554,7 +554,7 @@ static TokenData position_tok = {
 		.value = ATTRIBUTE_POSITION,
 	}
 };
-static TokenData position_tok = {
+static TokenData bar_position_tok = {
 	.string = "bar_position",
 	.token = {
 		.type = TOKEN_BAR_ATTRIBUTE,
@@ -570,6 +570,13 @@ static TokenData bar_width_tok = {
 };
 static TokenData bar_pad_tok = {
 	.string = "bar_pad",
+	.token = {
+		.type = TOKEN_BAR_ATTRIBUTE,
+		.value = ATTRIBUTE_BAR_PAD,
+	}
+};
+static TokenData pad_tok = {
+	.string = "pad",
 	.token = {
 		.type = TOKEN_BAR_ATTRIBUTE,
 		.value = ATTRIBUTE_BAR_PAD,
@@ -912,7 +919,7 @@ static TokenData *hashtable[] = {
 	NULL,
 	&font_tok,
 	NULL,
-	NULL,
+	&pad_tok,
 	NULL,
 	NULL,
 	NULL,
@@ -988,7 +995,7 @@ static TokenData *hashtable[] = {
 	NULL,
 	&switch_to_desktop_tok,
 	NULL,
-	&position_tok,
+	&bar_position_tok,
 	NULL,
 	NULL,
 	NULL,

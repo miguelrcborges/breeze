@@ -418,7 +418,7 @@ static const u16 *parseBarAttribute(const u16 *font_str, uptr attr) {
 		case ATTRIBUTE_POSITION: {
 			if (t.type != TOKEN_POSITION) {
 				err = 1;
-				fprintf(stderr, "Expected a number token, got %s at line %llu.\n", tokenStrings[t.type], l->line);
+				fprintf(stderr, "Expected a position, got %s at line %llu.\n", tokenStrings[t.type], l->line);
 				return font_str;
 			}
 			bar_position = t.value;

@@ -67,5 +67,10 @@ extern COLORREF foreground;
 extern usize bar_position;
 extern usize bar_pad;
 extern usize bar_width;
+extern RECT desktop_rect;
+extern RECT hours_rect;
+extern RECT minutes_rect;
+extern RECT clock_rect;
+extern void (*drawBar)(HDC dc);
 
 #endif

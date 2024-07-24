@@ -1,22 +1,127 @@
 #include "c.h"
+#include <windows.h>
+#include <stdio.h>
 
 static HWND focused_window[MAX_DESKTOPS];
 static HWND windows[MAX_DESKTOPS][MAX_WINDOWS_PER_DESKTOP];
 static usize windows_count[MAX_DESKTOPS];
 static usize current_desktop = 1;
 
+static void drawVertical24hClock(HDC dc);
+static void drawHorizontal24hClock(HDC dc);
+
 static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lparam) {
 	HMONITOR main_mon = (HMONITOR) lparam;
 	if (mon == main_mon) {
-		rect->right -= bar_width;
+		int x, y, w, h;
+		switch (bar_position) {
+			case BAR_LEFT: {
+				x = rect->left;
+				y = rect->top;
+				w = bar_width;
+				h = rect->bottom - rect->top;
+				rect->left += bar_width;
+
+				desktop_rect.left = 0;
+				desktop_rect.right = w;
+				hours_rect.left = 0;
+				hours_rect.right = w;
+				minutes_rect.left = 0;
+				minutes_rect.right = w;
+				clock_rect.left = 0;
+				clock_rect.right = w;
+
+				desktop_rect.top = bar_pad;
+				desktop_rect.bottom = desktop_rect.top + bar_font_height;
+
+				minutes_rect.bottom = h - bar_pad;
+				minutes_rect.top = minutes_rect.bottom - bar_font_height;
+
+				hours_rect.bottom = minutes_rect.top;
+				hours_rect.top = hours_rect.bottom - bar_font_height;
+
+				clock_rect.top = hours_rect.top;
+				clock_rect.bottom = hours_rect.bottom;
+				drawBar = drawVertical24hClock;
+				break;
+			};
+			case BAR_TOP: {
+				x = rect->left;
+				y = rect->top;
+				w = rect->right - rect->left;
+				h = bar_width;
+				rect->top += bar_width;
+
+				desktop_rect.top = 0;
+				desktop_rect.bottom = h;
+				clock_rect.top = 0;
+				clock_rect.bottom = h;
+
+				desktop_rect.left = bar_pad;
+				desktop_rect.right = w;
+
+				clock_rect.right = w - bar_pad;
+				clock_rect.left = 0;
+				drawBar = drawHorizontal24hClock;
+				break;
+			};
+			case BAR_RIGHT: {
+				rect->right -= bar_width;
+				x = rect->right;
+				y = rect->top;
+				w = bar_width;
+				h = rect->bottom - rect->top;
+
+				desktop_rect.left = 0;
+				desktop_rect.right = w;
+				hours_rect.left = 0;
+				hours_rect.right = w;
+				minutes_rect.left = 0;
+				minutes_rect.right = w;
+
+				desktop_rect.top = bar_pad;
+				desktop_rect.bottom = desktop_rect.top + bar_font_height;
+
+				minutes_rect.bottom = h - bar_pad;
+				minutes_rect.top = minutes_rect.bottom - bar_font_height;
+
+				hours_rect.bottom = minutes_rect.top;
+				hours_rect.top = hours_rect.bottom - bar_font_height;
+
+				clock_rect.top = hours_rect.top;
+				clock_rect.bottom = hours_rect.bottom;
+				drawBar = drawVertical24hClock;
+				break;
+			};
+			case BAR_BOTTOM: {
+				rect->bottom -= bar_width;
+				x = rect->left;
+				y = rect->bottom;
+				w = rect->right - rect->left;
+				h = bar_width;
+
+				desktop_rect.top = 0;
+				desktop_rect.bottom = h;
+				clock_rect.top = 0;
+				clock_rect.bottom = h;
+
+				desktop_rect.left = bar_pad;
+				desktop_rect.right = w;
+
+				clock_rect.right = w - bar_pad;
+				clock_rect.left = 0;
+				drawBar = drawHorizontal24hClock;
+				break;
+			};
+		}
 		SetWindowPos(
 			bar_window,
 			0,
-			rect->right, rect->top, bar_width, rect->bottom - rect->top,
+			x, y, w, h,
 			SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOSENDCHANGING
 		);
 	}
-	SystemParametersInfoW(SPI_SETWORKAREA, 0, rect, 1);
+	SystemParametersInfoW(SPI_SETWORKAREA, 0, rect, SPIF_SENDCHANGE | SPIF_UPDATEINIFILE);
 	return 1;
 }
 
@@ -78,7 +183,7 @@ void switchToDesktop(void *t_desktop) {
 		SetForegroundWindow(focused_window[desktop]);
 	}
 	current_desktop = desktop;
-	InvalidateRect(bar_window, NULL, TRUE);
+	InvalidateRect(bar_window, &desktop_rect, FALSE);
 }
 
 void sendToDesktop(void *t_desktop) {
@@ -122,4 +227,32 @@ void focusPrev(void *_) {
 		if (unlikely(w == NULL)) return;
 	} while (!IsWindowVisible(w));
 	SetForegroundWindow(w);
+}
+
+
+
+// drawing clocks lol
+static void drawVertical24hClock(HDC dc) {
+	char buf[16];
+	sprintf(buf, "%zu", current_desktop);
+	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+
+	SYSTEMTIME lt;
+	GetLocalTime(&lt);
+	sprintf(buf, "%02hu", lt.wHour);
+	DrawTextA(dc, buf, -1, &hours_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+	sprintf(buf, "%02hu", lt.wMinute);
+	DrawTextA(dc, buf, -1, &minutes_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+}
+
+
+static void drawHorizontal24hClock(HDC dc) {
+	char buf[16];
+	sprintf(buf, "%zu", current_desktop);
+	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_LEFT | DT_SINGLELINE);
+
+	SYSTEMTIME lt;
+	GetLocalTime(&lt);
+	sprintf(buf, "%02hu:%02hu", lt.wHour, lt.wMinute);
+	DrawTextA(dc, buf, -1, &clock_rect, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
 }
