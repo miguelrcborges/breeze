@@ -21,7 +21,7 @@ jobs:
             asset_name: breeze
           - script: buildw.bat
             artifact_name: breezew-cl
-            asset_name: breeze-debug
+            asset_name: breeze-terminal
     steps:
     - uses: actions/checkout@v4
     - name: Enable Developer Command Prompt
