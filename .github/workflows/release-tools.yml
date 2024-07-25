@@ -1,4 +1,4 @@
-name: Quickshot CI
+name: Tool Releases
 
 on:
   release:
@@ -11,20 +11,18 @@ permissions:
 jobs:
   publish:
     name: Build and Publish all Tools
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup Zig Compiler
-      uses: mlugg/setup-zig@v1.2.0
+    - name: Enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.13.0
     - name: Build all tools
-      shell: bash
-      #find -iname build.sh -exec chmod +x {} \;
+      shell: pwsh
       run: |
           cd tools
           mkdir out
-          CC="zig cc"
-          find -iname build.sh -execdir sh {} +
-          find -iname "*.exe" -exec mv {} out/ \;
+          gci build.bat -r | % { pushd $_.DirectoryName; & $_.FullName; popd }
+          gci *.exe -r | mi -dest (join-path $pwd out)
     - name: Upload built tools to release
       uses: svenstaro/upload-release-action@2.9.0
       with:
