@@ -10,6 +10,6 @@ then
 	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1"
 fi
 
-CFLAGS="-DWINDOW -mwindows"
+CFLAGS="$CFLAGS -DWINDOW -mwindows"
 
 $CC $LINKS $CFLAGS src/main.c -o breezew-mingw-ucrt.exe
