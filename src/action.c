@@ -78,6 +78,8 @@ static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lp
 				hours_rect.right = w;
 				minutes_rect.left = 0;
 				minutes_rect.right = w;
+				clock_rect.left = 0;
+				clock_rect.right = w;
 
 				desktop_rect.top = bar_pad;
 				desktop_rect.bottom = desktop_rect.top + bar_font_height;
