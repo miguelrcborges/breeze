@@ -1,0 +1,40 @@
+name: CI Builds
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Clang
+      uses: egor-tensin/setup-clang@v1.4
+    - name: Build Debug
+      shell: cmd
+      run: build.bat
+    - name: Build Stable
+      shell: cmd
+      run: buildw.bat
+    - name: Select Time Zone
+      uses: szenius/set-timezone@v2.0
+    - name: Prepare Artifact
+      shell: pwsh
+      run: |
+        mkdir artifact
+        cp breeze-cl.exe artifact
+        cp breezew-cl.exe artifact
+        echo "BUILD_TAG=$(git log -1 --format="%h--%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4.3.4
+      with:
+        name: name-${{ env.BUILD_TAG }}
+        path: breeze*.exe
+        
+    #- name: make check
+    #  run: make check
+    #- name: make distcheck
+    #  run: make distcheck
