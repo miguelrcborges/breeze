@@ -1,4 +1,4 @@
-name: CI Builds
+name: C CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  Build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -22,20 +22,11 @@ jobs:
       run: buildw.bat
     - name: Select Time Zone
       uses: szenius/set-timezone@v2.0
-    - name: Prepare Artifact
+    - name: Prepare Artifact Name
       shell: pwsh
-      run: |
-        mkdir artifact
-        cp breeze-cl.exe artifact
-        cp breezew-cl.exe artifact
-        echo "BUILD_TAG=$(git log -1 --format="%h--%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
+      run: echo "BUILD_TAG=$(git log -1 --format="%h--%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
     - name: Upload Artifact
       uses: actions/upload-artifact@v4.3.4
       with:
         name: name-${{ env.BUILD_TAG }}
         path: breeze*.exe
-        
-    #- name: make check
-    #  run: make check
-    #- name: make distcheck
-    #  run: make distcheck
