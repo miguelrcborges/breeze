@@ -1,0 +1,31 @@
+name: Quickshot CI
+
+on:
+  release:
+    types: [created]
+
+permissions:
+    contents: write
+    packages: write
+
+jobs:
+  publish:
+    name: Build and Publish all Tools
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Zig Compiler
+      uses: mlugg/setup-zig@v1.2.0
+    - name: Build all tools
+      shell: bash
+      #find -iname build.sh -exec chmod +x {} \;
+      run: |
+          cd tools
+          mkdir out
+          CC="zig cc"
+          find -iname build.sh -execdir sh {} +
+          find -iname "*.exe" -exec mv {} out/ \;
+    - name: Upload built tools to release
+      uses: svenstaro/upload-release-action@2.9.0
+      with:
+        file_glob: tools/out/*.exe
