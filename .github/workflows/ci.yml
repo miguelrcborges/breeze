@@ -4,6 +4,7 @@ on:
   push:
     paths-ignore: 
       - '.github/**'
+      - 'tools/**'
     tags-ignore:
       - "**"
   pull_request:
