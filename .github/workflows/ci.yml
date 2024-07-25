@@ -32,9 +32,9 @@ jobs:
       uses: szenius/set-timezone@v2.0
     - name: Prepare Artifact Name
       shell: pwsh
-      run: echo "BUILD_TAG=$(git log -1 --format="%h--%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
+      run: echo "BUILD_TAG=$(git log -1 --format="%h-%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
     - name: Upload Artifact
       uses: actions/upload-artifact@v4.3.4
       with:
-        name: breeze-${{ env.BUILD_TAG }}
-        path: breeze*.exe
+        name: ${{ matrix.artifact_name }}-${{ env.BUILD_TAG }}.exe
+        path: ${{ matrix.artifact_name }}.exe
