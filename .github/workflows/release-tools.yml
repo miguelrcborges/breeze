@@ -23,6 +23,7 @@ jobs:
           mkdir out
           gci build.bat -r | % { pushd $_.DirectoryName; & $_.FullName; popd }
           gci *.exe -r | mi -dest (join-path $pwd out)
+          ls out/
     - name: Upload built tools to release
       uses: svenstaro/upload-release-action@2.9.0
       with:
