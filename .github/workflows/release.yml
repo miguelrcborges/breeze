@@ -1,0 +1,39 @@
+name: Build Releases
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+    contents: write
+    packages: write
+
+jobs:
+  Build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - script: build.bat
+            asset_name: breeze-cl
+          - script: buildw.bat
+            asset_name: breezew-cl
+    steps:
+    - uses: actions/checkout@v4
+    - name: Enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+    - name: Build Release Files
+      shell: cmd
+      run: ${{ matrix.script }}
+    - name: Upload built files release
+      uses: svenstaro/upload-release-action@2.9.0
+      with:
+        #repo_token: ${{ github.token }}
+        file: ${{ matrix.asset_name }}.exe
+        asset_name: ${{ matrix.asset_name }}-v${{ github.ref }}.exe
+    - name: Upload license to release
+      uses: svenstaro/upload-release-action@2.9.0
+      with:
+        #repo_token: 
+        file: LICENSE
