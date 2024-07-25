@@ -26,4 +26,5 @@ jobs:
     - name: Upload built tools to release
       uses: svenstaro/upload-release-action@2.9.0
       with:
-        file_glob: tools/out/*.exe
+        file: tools/out/*.exe
+        file_glob: true
