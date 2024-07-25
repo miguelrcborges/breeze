@@ -19,11 +19,13 @@ jobs:
     - name: Build all tools
       shell: pwsh
       run: |
+          echo "--- preparing folders ---"
           cd tools
           mkdir out
-          ls
+          echo "--- starting compilation ---"
           gci build.bat -r | % { pushd $_.DirectoryName; & $_.FullName; popd }
           gci *.exe -r | mi -dest (join-path $pwd out)
+          echo "--- finished compilation ---"
           ls out/
     - name: Upload built tools to release
       uses: svenstaro/upload-release-action@2.9.0
