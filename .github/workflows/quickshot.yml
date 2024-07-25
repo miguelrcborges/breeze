@@ -1,0 +1,27 @@
+name: Quickshot CI
+
+on:
+  workflow_dispatch:
+  push:
+    paths: "tools/quickshot/**"
+
+jobs:
+  build:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2.2.0
+      - name: Build Quickshot
+        shell: bash
+        run: "chmod +x tools/quickshot/build.sh && tools/quickshot/build.sh"
+      - name: Set Time Zone
+        uses: szenius/set-timezone@v2.0
+      - name: Prepare Artifact Name
+        shell: bash
+        run: echo "BUILD_TAG=$(git log -1 --format="%h--%ad" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: quickshot-${{ env.BUILD_TAG }}
+          path: quickshot*.exe
