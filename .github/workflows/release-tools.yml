@@ -21,6 +21,7 @@ jobs:
       run: |
           cd tools
           mkdir out
+          ls
           gci build.bat -r | % { pushd $_.DirectoryName; & $_.FullName; popd }
           gci *.exe -r | mi -dest (join-path $pwd out)
           ls out/
