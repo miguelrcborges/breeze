@@ -10,15 +10,18 @@ permissions:
     packages: write
 
 jobs:
-  Build:
+  publish:
+    name: Build ${{ matrix.asset_name }}
     runs-on: windows-latest
     strategy:
       matrix:
         include:
           - script: build.bat
-            asset_name: breeze-cl
+            artifact_name: breeze-cl
+            asset_name: breeze
           - script: buildw.bat
-            asset_name: breezew-cl
+            artifact_name: breezew-cl
+            asset_name: breeze-debug
     steps:
     - uses: actions/checkout@v4
     - name: Enable Developer Command Prompt
@@ -29,11 +32,10 @@ jobs:
     - name: Upload built files release
       uses: svenstaro/upload-release-action@2.9.0
       with:
-        #repo_token: ${{ github.token }}
-        file: ${{ matrix.asset_name }}.exe
-        asset_name: ${{ matrix.asset_name }}-v${{ github.ref }}.exe
+        file: ${{ matrix.artifact_name }}.exe
+        asset_name: ${{ matrix.asset_name }}-v$tag.exe
     - name: Upload license to release
       uses: svenstaro/upload-release-action@2.9.0
       with:
-        #repo_token: 
         file: LICENSE
+        overwrite: true
