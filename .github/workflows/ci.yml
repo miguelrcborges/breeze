@@ -4,22 +4,29 @@ on:
   push:
     paths-ignore: 
       - '.github/**'
+    tags-ignore:
+      - "**"
   pull_request:
   workflow_dispatch:
 
 jobs:
-  Build:
+  build:
+    name: Build ${{ matrix.artifact_name }} 
     runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - script: build.bat
+            artifact_name: breeze-cl
+          - script: buildw.bat
+            artifact_name: breezew-cl
     steps:
     - uses: actions/checkout@v4
     - name: Enable Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1.13.0
-    - name: Build Debug
+    - name: Build
       shell: cmd
-      run: build.bat
-    - name: Build Stable
-      shell: cmd
-      run: buildw.bat
+      run: ${{ matrix.script }}
     - name: Select Time Zone
       uses: szenius/set-timezone@v2.0
     - name: Prepare Artifact Name
@@ -28,5 +35,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4.3.4
       with:
-        name: name-${{ env.BUILD_TAG }}
+        name: breeze-${{ env.BUILD_TAG }}
         path: breeze*.exe
