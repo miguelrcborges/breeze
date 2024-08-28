@@ -164,8 +164,18 @@ void kill(void *arg) {
 static BOOL CALLBACK visitWindow(HWND w, LPARAM _) {
 	if (w == bar_window) return TRUE;
 	if (IsWindowVisible(w)) {
+		for (usize d = 0; d < MAX_DESKTOPS; ++d) {
+			if (d == current_desktop) continue;
+			for (usize i = 0; i < windows_count[d]; ++i) {
+				if (w == windows[d][i]) {
+					windows[d][i] = INVALID_HANDLE_VALUE;
+				}
+			}
+		}
 		windows[current_desktop][windows_count[current_desktop]++] = w;
 		ShowWindow(w, SW_HIDE);
+	} else {
+		EnumChildWindows(w, visitWindow, 0);
 	}
 	return TRUE;
 }
