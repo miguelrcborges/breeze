@@ -13,6 +13,8 @@ static const char *windowName = "quickshot";
 
 static int screenWidth;
 static int screenHeight;
+static int screenX;
+static int screenY;
 static int startX;
 static int startY;
 static int endX;
@@ -68,6 +70,8 @@ int WinMainCRTStartup(void) {
 
 	screenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
 	screenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+	screenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+	screenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
 
 	HDC Screen = GetDC(NULL);
 	BitmapMemory = CreateCompatibleDC(Screen);
@@ -77,7 +81,7 @@ int WinMainCRTStartup(void) {
 	SelectObject(BitmapMemory, ScreenBitmap);
 	SelectObject(DarkenBitmapMemory, DarkenScreenBitmap);
 
-	BitBlt(BitmapMemory, 0, 0, screenWidth, screenHeight, Screen, 0, 0, SRCCOPY);
+	BitBlt(BitmapMemory, 0, 0, screenWidth, screenHeight, Screen, screenX, screenY, SRCCOPY);
 	BLENDFUNCTION Blend = {
 		.BlendOp = AC_SRC_OVER,
 		.SourceConstantAlpha = 0x40
@@ -103,8 +107,8 @@ int WinMainCRTStartup(void) {
 		className,
 		windowName,
 		WS_POPUP|WS_VISIBLE,
-		0,
-		0,
+		screenX,
+		screenY,
 		screenWidth,
 		screenHeight,
 		NULL,
