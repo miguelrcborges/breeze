@@ -9,17 +9,13 @@
 #define MAX(a, b) ((a)>(b)?(a):(b))
 #define MIN(a, b) ((a)<(b)?(a):(b))
 
-BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT);
-
 static const char *className = "quickshotClass";
 static const char *windowName = "quickshot";
 
-static LONG screenWidth;
-static LONG screenHeight;
-static LONG screenLeft;
-static LONG screenTop;
-// static int screenRight;
-// static int screenBottom;
+static int screenWidth;
+static int screenHeight;
+static int screenLeft;
+static int screenTop;
 static int startX;
 static int startY;
 static int endX;
@@ -62,25 +58,6 @@ void CaptureScreenshot() {
 	DeleteDC(Mem);
 }
 
-BOOL getScreenRect(HMONITOR mon, HDC dc, LPRECT rect, LPARAM _) {
-	screenLeft = MIN(screenLeft, rect->left);
-	// screenRight = MAX(screenRight, rect->right);
-	screenTop = MIN(screenTop, rect->top);
-	// screenBottom = MAX(screenBottom, rect->bottom);
-	MONITORINFOEXA moninfo = {
-		.cbSize = sizeof(moninfo),
-	};
-	GetMonitorInfo(mon, &moninfo);
-	DEVMODE devmode = {
-		.dmSize = sizeof(devmode),
-	};
-	EnumDisplaySettings(moninfo.szDevice, ENUM_CURRENT_SETTINGS, &devmode);
-	screenWidth += devmode.dmPelsWidth;
-	screenHeight += devmode.dmPelsHeight;
-	return TRUE;
-}
-
-
 int WinMainCRTStartup(void) {
 	HINSTANCE Instance = GetModuleHandleW(NULL);
 	HANDLE mutex = CreateMutexA(NULL, TRUE, "quickshoot");
@@ -93,13 +70,14 @@ int WinMainCRTStartup(void) {
 		return 1;
 	}
 
-	screenLeft = LONG_MAX;
-	screenTop = LONG_MAX;
-	screenWidth = 0;
-	screenHeight = 0;
-	EnumDisplayMonitors(NULL, NULL, getScreenRect, 0);
-
 	HDC Screen = GetDC(NULL);
+	screenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+	screenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+	RECT clipBox;
+	GetClipBox(Screen, &clipBox);
+	screenWidth = clipBox.right - clipBox.left;
+	screenHeight = clipBox.bottom - clipBox.top;
+
 	BitmapMemory = CreateCompatibleDC(Screen);
 	DarkenBitmapMemory = CreateCompatibleDC(Screen);
 	ScreenBitmap = CreateCompatibleBitmap(Screen, screenWidth, screenHeight);
@@ -115,8 +93,6 @@ int WinMainCRTStartup(void) {
 	AlphaBlend(DarkenBitmapMemory, 0, 0, screenWidth, screenHeight, BitmapMemory, 0, 0, screenWidth, screenHeight, Blend);
 
 	ReleaseDC(NULL, Screen);
-
-	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	WNDCLASSEXA quickshotClass = {
 		.cbSize = sizeof(quickshotClass),
