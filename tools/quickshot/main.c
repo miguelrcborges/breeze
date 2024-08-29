@@ -4,17 +4,22 @@
 #include <windowsx.h>
 #include <wingdi.h>
 #include <uxtheme.h>
+#include <limits.h>
 
 #define MAX(a, b) ((a)>(b)?(a):(b))
 #define MIN(a, b) ((a)<(b)?(a):(b))
 
+BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT);
+
 static const char *className = "quickshotClass";
 static const char *windowName = "quickshot";
 
-static int screenWidth;
-static int screenHeight;
-static int screenX;
-static int screenY;
+static LONG screenWidth;
+static LONG screenHeight;
+static LONG screenLeft;
+static LONG screenTop;
+// static int screenRight;
+// static int screenBottom;
 static int startX;
 static int startY;
 static int endX;
@@ -55,6 +60,24 @@ void CaptureScreenshot() {
 	DeleteDC(Mem);
 }
 
+BOOL getScreenRect(HMONITOR mon, HDC dc, LPRECT rect, LPARAM _) {
+	screenLeft = MIN(screenLeft, rect->left);
+	// screenRight = MAX(screenRight, rect->right);
+	screenTop = MIN(screenTop, rect->top);
+	// screenBottom = MAX(screenBottom, rect->bottom);
+	MONITORINFOEXA moninfo = {
+		.cbSize = sizeof(moninfo),
+	};
+	GetMonitorInfo(mon, &moninfo);
+	DEVMODE devmode = {
+		.dmSize = sizeof(devmode),
+	};
+	EnumDisplaySettings(moninfo.szDevice, ENUM_CURRENT_SETTINGS, &devmode);
+	screenWidth += devmode.dmPelsWidth;
+	screenHeight += devmode.dmPelsHeight;
+	return TRUE;
+}
+
 
 int WinMainCRTStartup(void) {
 	HINSTANCE Instance = GetModuleHandleW(NULL);
@@ -68,10 +91,11 @@ int WinMainCRTStartup(void) {
 		return 1;
 	}
 
-	screenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-	screenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-	screenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
-	screenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+	screenLeft = LONG_MAX;
+	screenTop = LONG_MAX;
+	screenWidth = 0;
+	screenHeight = 0;
+	EnumDisplayMonitors(NULL, NULL, getScreenRect, 0);
 
 	HDC Screen = GetDC(NULL);
 	BitmapMemory = CreateCompatibleDC(Screen);
@@ -81,7 +105,7 @@ int WinMainCRTStartup(void) {
 	SelectObject(BitmapMemory, ScreenBitmap);
 	SelectObject(DarkenBitmapMemory, DarkenScreenBitmap);
 
-	BitBlt(BitmapMemory, 0, 0, screenWidth, screenHeight, Screen, screenX, screenY, SRCCOPY);
+	BitBlt(BitmapMemory, 0, 0, screenWidth, screenHeight, Screen, screenLeft, screenTop, SRCCOPY);
 	BLENDFUNCTION Blend = {
 		.BlendOp = AC_SRC_OVER,
 		.SourceConstantAlpha = 0x40
@@ -89,6 +113,8 @@ int WinMainCRTStartup(void) {
 	AlphaBlend(DarkenBitmapMemory, 0, 0, screenWidth, screenHeight, BitmapMemory, 0, 0, screenWidth, screenHeight, Blend);
 
 	ReleaseDC(NULL, Screen);
+
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	WNDCLASSEXA quickshotClass = {
 		.cbSize = sizeof(quickshotClass),
@@ -107,8 +133,8 @@ int WinMainCRTStartup(void) {
 		className,
 		windowName,
 		WS_POPUP|WS_VISIBLE,
-		screenX,
-		screenY,
+		screenLeft,
+		screenTop,
 		screenWidth,
 		screenHeight,
 		NULL,
@@ -209,24 +235,24 @@ giveup:
 		int oldY = endY;
 		endX = GET_X_LPARAM(LParam);
 		endY = GET_Y_LPARAM(LParam);
-		invalid.top = MIN(MIN(oldY, endY), startY);
-		invalid.bottom = MAX(MAX(oldY, endY), startY);	
-		invalid.left = MIN(MIN(oldX, endX), startX);
-		invalid.right = MAX(MAX(oldX, endX), startX);	
+		invalid.top = MIN(MIN(oldY-1, endY), startY);
+		invalid.bottom = MAX(MAX(oldY+1, endY), startY);	
+		invalid.left = MIN(MIN(oldX-1, endX), startX);
+		invalid.right = MAX(MAX(oldX+1, endX), startX);	
 
 		if (startX > endX) {
 			lowerX = endX;
-			width = startX - endX;
+			width = startX - endX + 1;
 		} else {
 			lowerX = startX;
-			width = endX - startX;
+			width = endX - startX + 1;
 		}
 		if (startY > endY) {
 			lowerY = endY;
-			height = startY - endY;
+			height = startY - endY + 1;
 		} else {
 			lowerY = startY;
-			height = endY - startY;
+			height = endY - startY + 1;
 		}
 
 		InvalidateRect(Window, &invalid, FALSE);

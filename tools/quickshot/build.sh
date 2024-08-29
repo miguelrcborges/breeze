@@ -1,4 +1,4 @@
-LINKS="-ffreestanding -nostdlib -lgdi32 -luxtheme -lmsimg32 -luser32 -lkernel32 -mwindows"
+LINKS="-nostdlib -ffreestanding -lgdi32 -luxtheme -lmsimg32 -luser32 -lkernel32 -mwindows"
 BIN="quickshot.exe"
 
 if [ -z "$CC" ]
