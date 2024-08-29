@@ -24,6 +24,8 @@ static int startX;
 static int startY;
 static int endX;
 static int endY;
+static int lastDrawnX;
+static int lastDrawnY;
 static int lowerX;
 static int lowerY;
 static int width;
@@ -201,6 +203,8 @@ end:
 giveup:
 #endif
 		EndPaint(Window, &Paint);
+		lastDrawnX = endX;
+		lastDrawnY = endY;
 		break;
 	}
 
@@ -231,28 +235,26 @@ giveup:
 			break;
 
 		RECT invalid;
-		int oldX = endX;
-		int oldY = endY;
 		endX = GET_X_LPARAM(LParam);
 		endY = GET_Y_LPARAM(LParam);
-		invalid.top = MIN(MIN(oldY-1, endY), startY);
-		invalid.bottom = MAX(MAX(oldY+1, endY), startY);	
-		invalid.left = MIN(MIN(oldX-1, endX), startX);
-		invalid.right = MAX(MAX(oldX+1, endX), startX);	
+		invalid.top = MIN(MIN(lastDrawnY, endY), startY);
+		invalid.bottom = MAX(MAX(lastDrawnY, endY), startY);	
+		invalid.left = MIN(MIN(lastDrawnX, endX), startX);
+		invalid.right = MAX(MAX(lastDrawnX, endX), startX);	
 
 		if (startX > endX) {
 			lowerX = endX;
-			width = startX - endX + 1;
+			width = startX - endX;
 		} else {
 			lowerX = startX;
-			width = endX - startX + 1;
+			width = endX - startX;
 		}
 		if (startY > endY) {
 			lowerY = endY;
-			height = startY - endY + 1;
+			height = startY - endY;
 		} else {
 			lowerY = startY;
-			height = endY - startY + 1;
+			height = endY - startY;
 		}
 
 		InvalidateRect(Window, &invalid, FALSE);
