@@ -183,7 +183,6 @@ giveup:
 	case WM_KEYDOWN: {
 		if (WParam == VK_ESCAPE) {
 			PostQuitMessage(0);
-			ExitProcess(0);
 		}
 		break;
 	}
