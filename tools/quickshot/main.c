@@ -136,10 +136,12 @@ int WinMainCRTStartup(void) {
 		}
 	}
 
+	CloseWindow(Window);
 	DeleteObject(ScreenBitmap);
 	DeleteObject(DarkenScreenBitmap);
 	DeleteDC(BitmapMemory);
 	DeleteDC(DarkenBitmapMemory);
+	ExitProcess(0);
 
 	return 0;
 }
@@ -149,9 +151,6 @@ static LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPA
 	LRESULT Result = 0;
 	switch (Message) {
 	case WM_PAINT: {
-#ifdef _DEBUG
-		__builtin_printf("paint called\n");
-#endif
 		PAINTSTRUCT Paint;
 #ifndef UNBUFFERED_PAINT
 		HDC UnbufferedContext = BeginPaint(Window, &Paint);
@@ -168,9 +167,6 @@ static LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPA
 			if ((startX - endX) * (startY - endY) == 0) {
 				goto end;
 			}
-#ifdef _DEBUG
-			__builtin_printf("drawing non darkened w/ size %dx%d @ %dx%d\n", width, height, lowerX, lowerY);
-#endif
 			BitBlt(Context, lowerX, lowerY, width, height, BitmapMemory, lowerX, lowerY, SRCCOPY);
 		} 
 end:
@@ -187,6 +183,7 @@ giveup:
 	case WM_KEYDOWN: {
 		if (WParam == VK_ESCAPE) {
 			PostQuitMessage(0);
+			ExitProcess(0);
 		}
 		break;
 	}
@@ -245,9 +242,6 @@ giveup:
 	}
 
 	default:
-#ifdef _DEBUG
-		__builtin_printf("Default Proc @ Message :%d\n", Message);
-#endif
 		Result = DefWindowProcA(Window, Message, WParam, LParam); 
 	}
 
