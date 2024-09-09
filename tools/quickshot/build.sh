@@ -8,7 +8,7 @@ fi
 
 if [ -z "$CFLAGS" ]
 then
-	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1 -pipe"
+	CFLAGS="-O2 -flto -s -D_FORTIFY_SOURCE=1 -pipe -DDPI_AWARE"
 fi
 
 $CC $CFLAGS main.c $LINKS -o $BIN

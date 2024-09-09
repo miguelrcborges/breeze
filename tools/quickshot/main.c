@@ -70,13 +70,21 @@ int WinMainCRTStartup(void) {
 		return 1;
 	}
 
+#ifdef DPI_AWARE
+	SetProcessDPIAware();
+#endif
+
 	HDC Screen = GetDC(NULL);
 	screenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
 	screenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
 	RECT clipBox;
 	GetClipBox(Screen, &clipBox);
-	screenWidth = clipBox.right - clipBox.left;
-	screenHeight = clipBox.bottom - clipBox.top;
+	int DCWidth = clipBox.right - clipBox.left;
+	int DCHeight = clipBox.bottom - clipBox.top;
+	int virtualWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+	screenWidth = MAX(DCWidth, virtualWidth);
+	screenHeight = MAX(DCHeight, virtualHeight);
 
 	BitmapMemory = CreateCompatibleDC(Screen);
 	DarkenBitmapMemory = CreateCompatibleDC(Screen);
