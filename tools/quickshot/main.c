@@ -70,7 +70,7 @@ int WinMainCRTStartup(void) {
 		return 1;
 	}
 
-#ifdef DPI_AWARE
+#ifndef DPI_UNAWARE
 	SetProcessDPIAware();
 #endif
 
