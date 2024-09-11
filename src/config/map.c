@@ -36,6 +36,13 @@ static TokenData tk_spawn = {
 		.value = ACTION_SPAWN,
 	}
 };
+static TokenData tk_command_line = {
+	.string = "command_line",
+	.token = {
+		.type = TOKEN_ACTION,
+		.value = ACTION_COMMAND_LINE,
+	}
+};
 static TokenData tk_reload = {
 	.string = "reload",
 	.token = {
@@ -1098,7 +1105,7 @@ static TokenData *hashtable[] = {
 	NULL,
 	&mod_win,
 	NULL,
-	NULL,
+	&tk_command_line,
 	NULL,
 	NULL,
 	NULL,

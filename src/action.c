@@ -135,6 +135,19 @@ void spawn(void *arg) {
 	};
 	PROCESS_INFORMATION pi;
 
+	CreateProcessW(0, command, 0, 0, 0, CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW, 0, 0, &si, &pi);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+}
+
+void spawnWithoutConsole(void *arg) {
+	u16 *command = arg;
+
+	STARTUPINFOW si = {
+		.cb = sizeof(STARTUPINFOW)
+	};
+	PROCESS_INFORMATION pi;
+
 	CreateProcessW(0, command, 0, 0, 0, CREATE_NEW_PROCESS_GROUP, 0, 0, &si, &pi);
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);

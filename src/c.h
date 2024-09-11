@@ -40,6 +40,7 @@ typedef struct {
 
 /* action.c */
 void spawn(void *arg);
+void spawnWithoutConsole(void *arg);
 void quit(void *arg);
 void reloadConfig(void *arg);
 void kill(void *arg);

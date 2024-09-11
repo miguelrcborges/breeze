@@ -5,6 +5,7 @@
 = TOKEN_EQUAL equal 0
 
 spawn TOKEN_ACTION tk_spawn ACTION_SPAWN
+command_line TOKEN_ACTION tk_command_line ACTION_COMMAND_LINE
 reload TOKEN_ACTION tk_reload ACTION_RELOAD
 quit TOKEN_ACTION tk_quit ACTION_QUIT
 kill TOKEN_ACTION tk_kill ACTION_KILL

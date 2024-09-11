@@ -33,10 +33,12 @@ static char *tokenStrings[TOKEN_COUNT] = {
 
 static bool actionRequiresArg[ACTION_COUNT] = {
 	[ACTION_SPAWN] = 1,
+	[ACTION_COMMAND_LINE] = 1,
 };
 
 static void (*actionMap[ACTION_COUNT])(void *arg) = {
 	[ACTION_SPAWN] = spawn,
+	[ACTION_COMMAND_LINE] = spawnWithoutConsole,
 	[ACTION_RELOAD] = reloadConfig,
 	[ACTION_QUIT] = quit,
 	[ACTION_KILL] = kill,
@@ -47,6 +49,7 @@ static void (*actionMap[ACTION_COUNT])(void *arg) = {
 
 static char *actionStrings[ACTION_COUNT] = {
 	[ACTION_SPAWN] = "spawn",
+	[ACTION_COMMAND_LINE] = "command line",
 	[ACTION_RELOAD] = "reload",
 	[ACTION_QUIT] = "quit",
 	[ACTION_KILL] = "kill",
