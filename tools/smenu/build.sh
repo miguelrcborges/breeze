@@ -1,4 +1,4 @@
-LINKS="-luser32 -lgdi32"
+LINKS="-luser32 -lgdi32 -lshell32"
 BIN="smenu.exe"
 
 if [ -z "$CC" ]

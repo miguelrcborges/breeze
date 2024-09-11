@@ -1,8 +1,13 @@
-#include <windows.h>
 #include "c.h"
+#include <windows.h>
+#include <Shlobj.h>
+#include <stdio.h>
+#include <io.h>
 
 enum {
 	INPUT_BUF_SIZE = 128,
+	WIDESTRING_ALLOC_BUF_SIZE = 65535, // u16 max
+	WIDESTRING_MAX_STRINGS = 1024,
 };
 
 static HBRUSH background_brush;
@@ -11,8 +16,19 @@ static u16 input[INPUT_BUF_SIZE];
 static u8 input_len;
 static HFONT ui_font;
 
+static u16 widestr_alloc[WIDESTRING_ALLOC_BUF_SIZE];
+static u16 widestr_alloc_pos = 0;
+static u16 widestrs[WIDESTRING_MAX_STRINGS];
+static u16 widestrs_count = 0;
+static u16 last_local_user_application;
+static unsigned char run_as_app_launcher;
+
 static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static u32 isNotInvalidAscii(u16 codepoint);
+
+static void parseStdin(void);
+static void parseFolder(u16 *path);
+static int sortStrings(const void *sip1, const void *sip2);
 
 int main(void) {
 	HINSTANCE hInstance = GetModuleHandleW(NULL);
@@ -35,6 +51,25 @@ int main(void) {
 	if (!RegisterClassW(&smenu_class)) {
 		MessageBoxA(NULL, "Failed to register smenu class.", "smenu error", MB_ICONERROR | MB_OK);
 		return 1;
+	}
+
+	run_as_app_launcher = _isatty(_fileno(stdin)) ? 1u : 0u;
+	if (run_as_app_launcher) {
+		u16 tmp_buff[MAX_PATH];
+		SHGetFolderPathW(NULL, CSIDL_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+		wcscat(tmp_buff, L"\\Programs\\*");
+		parseFolder(tmp_buff);
+		last_local_user_application = widestrs_count;
+		SHGetFolderPathW(NULL, CSIDL_COMMON_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+		wcscat(tmp_buff, L"\\Programs\\*");
+		parseFolder(tmp_buff);
+	} else {
+		parseStdin();
+	}
+	qsort(widestrs, widestrs_count, sizeof(widestrs[0]), sortStrings);
+
+	for (size_t i = 0; i < widestrs_count; i += 1) {
+		wprintf(L"%s\n", widestr_alloc + widestrs[i]);
 	}
 
 	POINT cursor_pos;
@@ -149,4 +184,58 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
 static u32 isNotInvalidAscii(u16 codepoint) {
 	return codepoint >= ' ';
+}
+
+static void parseStdin(void) {
+	u16 read_buf[1024];
+	while (fgetws(read_buf, 1024, stdin)) {
+		if (read_buf[0] == '\n') continue;
+		widestrs[widestrs_count] = widestr_alloc_pos;
+		for (size_t i = 0; read_buf[i] != '\n' && read_buf[i] != '\0'; i += 1) {
+			widestr_alloc[widestr_alloc_pos] = read_buf[i];
+			widestr_alloc_pos += 1;
+		}
+		widestr_alloc[widestr_alloc_pos] = '\0';
+		widestr_alloc_pos += 1;
+		widestrs_count += 1;
+	}
+}
+
+static void parseFolder(u16 *path) {
+	WIN32_FIND_DATAW find_data;
+	size_t len = wcslen(path);
+	HANDLE find_handle = FindFirstFileW(path, &find_data);
+	path[len-1] = '\0';
+	if (find_handle == INVALID_HANDLE_VALUE) {
+		MessageBoxA(NULL, "smenu wasn't able to open an application folder.", "smenu error", MB_ICONERROR | MB_OK);
+		ExitProcess(1);
+	}
+	do {
+		if ((FILE_ATTRIBUTE_DIRECTORY & find_data.dwFileAttributes) == 0) {
+			unsigned char isDesktopIni = wcscmp(find_data.cFileName, L"desktop.ini") == 0;
+			if (isDesktopIni) continue;
+			widestrs[widestrs_count] = widestr_alloc_pos;
+			for (size_t i = 0; find_data.cFileName[i] != '\0'; i += 1) {
+				widestr_alloc[widestr_alloc_pos] = find_data.cFileName[i];
+				widestr_alloc_pos += 1;
+			}
+			widestr_alloc[widestr_alloc_pos] = '\0';
+			widestr_alloc_pos += 1;
+			widestrs_count += 1;
+		} else {
+			unsigned char isCurrDir = wcscmp(find_data.cFileName, L".") == 0;
+			unsigned char isAboveDir = wcscmp(find_data.cFileName, L"..") == 0;
+			if (isCurrDir || isAboveDir) continue;
+			u16 new_dir[MAX_PATH];
+			swprintf(new_dir, MAX_PATH-1, L"%s%s\\*", path, find_data.cFileName);
+			parseFolder(new_dir);
+		}
+	} while (FindNextFileW(find_handle, &find_data));
+	path[len-1] = '*';
+}
+
+static int sortStrings(const void *sip1, const void *sip2) {
+	u16 s1 = *(const u16 *)sip1;
+	u16 s2 = *(const u16 *)sip2;
+	return _wcsicmp(widestr_alloc + s1, widestr_alloc + s2);
 }
