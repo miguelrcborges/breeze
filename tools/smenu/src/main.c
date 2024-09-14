@@ -179,7 +179,7 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		case WM_CHAR: {
 			unsigned char check_matches = 0;
 			switch (wParam) {
-				case 0x1B: {
+				case 0x1B: /* Esc */ {
 					PostQuitMessage(0);
 					break;
 				} 
@@ -192,6 +192,16 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					memcpy(matching_strs, widestrs, widestrs_count * sizeof(widestrs[0]));
 					matching_count = widestrs_count;
 					check_matches = input_len != 0;
+					break;
+				}
+				case 0x7F: /* Ctrl-\b */ {
+					if (input_len > 0) {
+						input_len = 0;
+						input[0] = '\0';
+						InvalidateRect(hWnd, NULL, TRUE);
+					}
+					memcpy(matching_strs, widestrs, widestrs_count * sizeof(widestrs[0]));
+					matching_count = widestrs_count;
 					break;
 				}
 				case '\r': {
