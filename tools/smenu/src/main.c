@@ -287,7 +287,6 @@ static void parseFolder(u16 *path, u8 apps_root_len) {
 	size_t len = wcslen(path);
 	HANDLE find_handle = FindFirstFileW(path, &find_data);
 	path[len-1] = '\0';
-	wprintf(L"%s : %s\n", path, path + apps_root_len);
 	if (find_handle == INVALID_HANDLE_VALUE) {
 		MessageBoxA(NULL, "smenu wasn't able to open an application folder.", "smenu error", MB_ICONERROR | MB_OK);
 		ExitProcess(1);
