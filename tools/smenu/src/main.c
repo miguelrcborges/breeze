@@ -71,10 +71,10 @@ int main(void) {
 		len = wcslen(tmp_buff);
 		memcpy(tmp_buff + len, L"\\*", sizeof(L"\\*"));
 		parseFolder(tmp_buff, len+1);
+		qsort(widestrs, widestrs_count, sizeof(widestrs[0]), sortStrings);
 	} else {
 		parseStdin();
 	}
-	qsort(widestrs, widestrs_count, sizeof(widestrs[0]), sortStrings);
 	memcpy(matching_strs, widestrs, widestrs_count * sizeof(widestrs[0]));
 	matching_count = widestrs_count;
 
