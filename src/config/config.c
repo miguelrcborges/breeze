@@ -14,10 +14,10 @@ static u16 systemapps[512];
 
 void loadUserApplicationDirs(void) {
 	u16 tmp_buff[MAX_PATH];
-	SHGetFolderPathW(NULL, CSIDL_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
-	swprintf(userapps, len(userapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
-	SHGetFolderPathW(NULL, CSIDL_COMMON_STARTMENU, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
-	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\\Programs\"", tmp_buff);
+	SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+	swprintf(userapps, len(userapps) - 1, L"explorer.exe \"%s\"", tmp_buff);
+	SHGetFolderPathW(NULL, CSIDL_COMMON_PROGRAMS, NULL, SHGFP_TYPE_CURRENT, tmp_buff);
+	swprintf(systemapps, len(systemapps) - 1, L"explorer.exe \"%s\"", tmp_buff);
 }
 
 static void setBarDefaults() {
