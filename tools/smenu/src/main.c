@@ -18,7 +18,7 @@ static u16 input[INPUT_BUF_SIZE];
 static u8 input_len;
 static HFONT search_font;
 static HFONT options_font;
-static u8 selected;
+static u16 selected;
 
 static u16 widestr_alloc[WIDESTRING_ALLOC_BUF_SIZE];
 static u16 widestr_alloc_pos = 0;
@@ -129,7 +129,6 @@ int main(void) {
 
 
 static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	LRESULT result = 0;
 	switch (uMsg) {
 		case WM_PAINT: {
 			PAINTSTRUCT ps;
@@ -174,6 +173,25 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 
 			EndPaint(hWnd, &ps);
+			return 0;
+		}
+		case WM_KEYDOWN: {
+			switch (wParam) {
+				case VK_DOWN: {
+					if (selected+1 < matching_count) {
+						selected += 1;
+						InvalidateRect(hWnd, NULL, TRUE);
+					}
+					break;
+				}
+				case VK_UP: {
+					if (selected > 0) {
+						selected -= 1;
+						InvalidateRect(hWnd, NULL, TRUE);
+					}
+					break;
+				}
+			}
 			return 0;
 		}
 		case WM_CHAR: {
@@ -246,6 +264,7 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				}
 				matching_count = new_matches;
 			}
+			selected = selected < matching_count ? selected : matching_count-1;
 			return 0;
 		}
 		case WM_KILLFOCUS: {
