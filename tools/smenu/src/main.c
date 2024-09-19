@@ -19,6 +19,8 @@ static u8 input_len;
 static HFONT search_font;
 static HFONT options_font;
 static u16 selected;
+static u16 offset;
+static u8 n_options_rendered;
 
 static u16 widestr_alloc[WIDESTRING_ALLOC_BUF_SIZE];
 static u16 widestr_alloc_pos = 0;
@@ -113,6 +115,13 @@ int main(void) {
 		hInstance,
 		NULL
 	);
+	
+	{
+		int h = win_height;
+		h -= (MAIN_WINDOW_PADDING << 1) + (DEFAULT_SEARCH_FONT_SIZE + (SEARCH_BOX_WINDOW_PADDING << 1));
+		h -= SEARCH_BOX_MARGIN;
+		n_options_rendered = h / (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
+	}
 
 	MSG msg;
 	while (GetMessageW(&msg, 0, 0, 0) > 0) {
@@ -152,23 +161,25 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
 			SelectObject(dc, options_font);
 			RECT optionRect = searchBoxRect;
+			optionRect.left -= OPTION_PADDING - SEARCH_BOX_WINDOW_PADDING;
 			optionRect.top = optionRect.bottom + (SEARCH_BOX_MARGIN + SEARCH_BOX_WINDOW_PADDING); 
 			optionRect.bottom = optionRect.top + DEFAULT_OPTIONS_FONT_SIZE + SEARCH_BOX_WINDOW_PADDING; 
-			int option = 0;
+			u16 option = offset;
 			while (optionRect.bottom <= ps.rcPaint.bottom - MAIN_WINDOW_PADDING && option < matching_count) {
 				if (option == selected) {
 					SetTextColor(dc, DEFAULT_BACKGROUND_COLOR);
 					RECT boxRect = optionRect;
-					boxRect.top -= SEARCH_BOX_WINDOW_PADDING;
-					boxRect.left -= SEARCH_BOX_WINDOW_PADDING;
+					boxRect.top -= OPTION_PADDING;
+					boxRect.left -= OPTION_PADDING;
 					FillRect(dc, &boxRect, foreground_brush);
 					DrawTextW(dc, widestr_alloc + matching_strs[option], -1, &optionRect, DT_LEFT | DT_TOP);
 					SetTextColor(dc, DEFAULT_FOREGROUND_COLOR);
 				} else {
 					DrawTextW(dc, widestr_alloc + matching_strs[option], -1, &optionRect, DT_LEFT | DT_TOP);
 				}
-				optionRect.top += (DEFAULT_OPTIONS_FONT_SIZE + (SEARCH_BOX_WINDOW_PADDING << 1));
-				optionRect.bottom += (DEFAULT_OPTIONS_FONT_SIZE + (SEARCH_BOX_WINDOW_PADDING << 1));
+
+				optionRect.top += (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
+				optionRect.bottom += (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
 				option += 1;
 			}
 
@@ -182,12 +193,24 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 						selected += 1;
 						InvalidateRect(hWnd, NULL, TRUE);
 					}
+					if (
+						selected+DEFAULT_OPTIONS_SCROLLOFF == offset+n_options_rendered && 
+						offset+n_options_rendered < matching_count
+					) {
+						offset += 1;
+					}
 					break;
 				}
 				case VK_UP: {
 					if (selected > 0) {
 						selected -= 1;
 						InvalidateRect(hWnd, NULL, TRUE);
+					}
+					if (
+						selected-DEFAULT_OPTIONS_SCROLLOFF < offset &&
+						offset > 0 
+					) {
+						offset -= 1;
 					}
 					break;
 				}
@@ -253,6 +276,8 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					break;
 				}
 			}
+			selected = 0;
+			offset = 0;
 			if (check_matches) {
 				u16 previous_matches_count = matching_count;
 				u16 new_matches = 0;
