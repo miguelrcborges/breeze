@@ -24,6 +24,12 @@ The configuration is pretty simple. An example one can be seen [here](breeze.con
 
 
 ### Roadmap
+
 - [X] Virtual Destkops (remains adding to configuration)
 - [X] System bar (clock / virtual desktop id)
 - [X] Application Launcher (separate tool)
+- [ ] Override Windows taken hotkeys (through the use of a LLK Hook)
+- [ ] Custom bar drawing as a plugin (through the use of dynamic linking)
+- [ ] Wallpaper support
+- [ ] Dynamic Dispatch DPI awareness and act acordingly
+- [ ] Making it CRT free (to consider)
