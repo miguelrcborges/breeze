@@ -128,7 +128,7 @@ int main(void) {
 		int h = win_height;
 		h -= (MAIN_WINDOW_PADDING << 1) + (DEFAULT_SEARCH_FONT_SIZE + (SEARCH_BOX_WINDOW_PADDING << 1));
 		h -= SEARCH_BOX_MARGIN;
-		n_options_rendered = h / (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
+		n_options_rendered = h / (effective_options_font_size + (OPTION_PADDING << 1));
 	}
 
 	MSG msg;
