@@ -18,6 +18,8 @@ static u16 input[INPUT_BUF_SIZE];
 static u8 input_len;
 static HFONT search_font;
 static HFONT options_font;
+static u32 effective_search_font_size;
+static u32 effective_options_font_size;
 static u16 selected;
 static u16 offset;
 static u8 n_options_rendered;
@@ -34,6 +36,8 @@ static unsigned char run_as_app_launcher;
 static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static u32 isNotInvalidAscii(u16 codepoint);
 
+static void setProcessDpi();
+static u32 getMonitorScaling(HMONITOR mon);
 static void parseStdin(void);
 static void parseFolder(u16 *path, u8 apps_root_len);
 static int sortStrings(const void *sip1, const void *sip2);
@@ -50,6 +54,7 @@ int main(void) {
 		return 1;
 	}
 
+	setProcessDpi();
 	WNDCLASSW smenu_class = {
 		.hInstance = hInstance,
 		.lpszClassName = L"smenu",
@@ -87,6 +92,7 @@ int main(void) {
 		.cbSize = sizeof(current_mon_info),
 	};
 	GetMonitorInfoA(current_mon, (MONITORINFO *)&current_mon_info);
+	u32 scaling = getMonitorScaling(current_mon);
 
 	int mon_width = current_mon_info.rcMonitor.right - current_mon_info.rcMonitor.left;
 	int mon_height = current_mon_info.rcMonitor.bottom - current_mon_info.rcMonitor.top;
@@ -98,8 +104,10 @@ int main(void) {
 	background_brush2 = CreateSolidBrush(DEFAULT_BACKGROUND_COLOR2);
 	foreground_brush  = CreateSolidBrush(DEFAULT_FOREGROUND_COLOR);
 
-	search_font = CreateFontW(DEFAULT_SEARCH_FONT_SIZE, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0, L"Tahoma");
-	options_font = CreateFontW(DEFAULT_OPTIONS_FONT_SIZE, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0, L"Tahoma");
+	effective_search_font_size = DEFAULT_SEARCH_FONT_SIZE * scaling / 96;
+	effective_options_font_size = DEFAULT_OPTIONS_FONT_SIZE * scaling / 96;
+	search_font = CreateFontW(effective_search_font_size, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0, L"Tahoma");
+	options_font = CreateFontW(effective_options_font_size, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0, L"Tahoma");
 
 	HWND parent = CreateWindowExW(
 		WS_EX_TOPMOST,
@@ -149,7 +157,7 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			searchBoxRect.top += MAIN_WINDOW_PADDING;
 			searchBoxRect.left += MAIN_WINDOW_PADDING;
 			searchBoxRect.right -= MAIN_WINDOW_PADDING;
-			searchBoxRect.bottom = searchBoxRect.top + (DEFAULT_SEARCH_FONT_SIZE + (SEARCH_BOX_WINDOW_PADDING << 1));
+			searchBoxRect.bottom = searchBoxRect.top + (effective_search_font_size  + (SEARCH_BOX_WINDOW_PADDING << 1));
 			FillRect(dc, &searchBoxRect, background_brush2);
 
 			searchBoxRect.top += SEARCH_BOX_WINDOW_PADDING;
@@ -163,7 +171,7 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			RECT optionRect = searchBoxRect;
 			optionRect.left -= OPTION_PADDING - SEARCH_BOX_WINDOW_PADDING;
 			optionRect.top = optionRect.bottom + (SEARCH_BOX_MARGIN + SEARCH_BOX_WINDOW_PADDING); 
-			optionRect.bottom = optionRect.top + DEFAULT_OPTIONS_FONT_SIZE + SEARCH_BOX_WINDOW_PADDING; 
+			optionRect.bottom = optionRect.top + effective_options_font_size + SEARCH_BOX_WINDOW_PADDING; 
 			u16 option = offset;
 			while (optionRect.bottom <= ps.rcPaint.bottom - MAIN_WINDOW_PADDING && option < matching_count) {
 				if (option == selected) {
@@ -178,8 +186,8 @@ static LRESULT CALLBACK smenuProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					DrawTextW(dc, widestr_alloc + matching_strs[option], -1, &optionRect, DT_LEFT | DT_TOP);
 				}
 
-				optionRect.top += (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
-				optionRect.bottom += (DEFAULT_OPTIONS_FONT_SIZE + (OPTION_PADDING << 1));
+				optionRect.top += (effective_options_font_size + (OPTION_PADDING << 1));
+				optionRect.bottom += (effective_options_font_size + (OPTION_PADDING << 1));
 				option += 1;
 			}
 
@@ -364,4 +372,48 @@ static int sortStrings(const void *sip1, const void *sip2) {
 	u16 s1 = *(const u16 *)sip1;
 	u16 s2 = *(const u16 *)sip2;
 	return _wcsicmp(widestr_alloc + s1, widestr_alloc + s2);
+}
+
+static void setProcessDpi(void) {
+	HMODULE user32_dll = LoadLibraryA("user32.dll");
+	if (user32_dll == NULL) return;
+
+	typedef BOOL (*set_process_dpi_awareness_context)(DPI_AWARENESS_CONTEXT);
+	set_process_dpi_awareness_context fun1 = (set_process_dpi_awareness_context)
+		GetProcAddress(user32_dll, "SetProcessDpiAwarenessContext");
+	if (fun1) {
+		if (fun1(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) goto freedll;
+		if (fun1(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) goto freedll;
+	}
+
+	typedef BOOL (*set_process_dpi_aware)(void);
+	set_process_dpi_aware fun2 = (set_process_dpi_aware)
+		GetProcAddress(user32_dll, "SetProcessDPIAware");
+	if (fun2) {
+		fun2();
+	}
+
+freedll:
+	FreeLibrary(user32_dll);
+}
+
+static u32 getMonitorScaling(HMONITOR mon) {
+	typedef HRESULT (WINAPI *get_dpi_per_monitor)(HMONITOR hmonitor, int dpiType, UINT* dpiX, UINT* dpiY);
+	HMODULE dll = LoadLibraryW(L"shcore");
+	if (dll) {
+		get_dpi_per_monitor fun = (get_dpi_per_monitor)GetProcAddress(dll, "GetDpiForMonitor");
+		if (fun) {
+			UINT dpi_x;
+			UINT dpi_y;
+			HRESULT fun_result = fun(mon, 0, &dpi_x, &dpi_y);
+			if (SUCCEEDED(fun_result)) {
+				return dpi_x;
+			}
+		}
+	}
+
+	HDC screen_dc = GetDC(0);
+	int dpi_x = GetDeviceCaps(screen_dc, LOGPIXELSX);
+	ReleaseDC(0, screen_dc);
+	return dpi_x;
 }
