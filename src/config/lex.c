@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-static u16 widestring_alloc[WIDESTR_ALLOC_BUFF_SIZE];
+WidestringAllocator widestringAllocator;
 
 static bool isAlphanumerical(u8 ch) {
 	return ch >= 'a' && ch <= 'z' ||
@@ -31,7 +31,7 @@ static void skipIgnore(Lexer *lex) {
 	};
 
 	u8 ch;
-	while (skipTable[ch = lex->string[lex->pos]]) {
+	while (skipTable[ch = lex->source[lex->pos]]) {
 		if (ch == '\n')
 			lex->line++;
 		lex->pos++;
@@ -40,21 +40,20 @@ static void skipIgnore(Lexer *lex) {
 
 Lexer Lexer_create(char *source) {
 	return (Lexer) {
-		.string = source,
+		.source = source,
 		.pos = 0,
 		.line = 1,
-		.alloc_pos = 0
 	};
 }
 
 Token Lexer_nextToken(Lexer *lex) {
 	skipIgnore(lex);
-	u8 ch = lex->string[lex->pos];
+	u8 ch = lex->source[lex->pos];
 	if (ch == '\'') {
 		usize s = lex->pos + 1;
 		do {
 			lex->pos++;
-			ch = lex->string[lex->pos];
+			ch = lex->source[lex->pos];
 			if (ch == '\n')
 				lex->line++;
 		} while (ch != '\'' && ch != '\0');
@@ -63,15 +62,15 @@ Token Lexer_nextToken(Lexer *lex) {
 				.type = TOKEN_UNTERMINATED_STRING
 			};
 		}
-		u16 *wstr = widestring_alloc + lex->alloc_pos;
-		int written = MultiByteToWideChar(CP_UTF8, 0, lex->string + s, lex->pos - s, wstr, WIDESTR_ALLOC_BUFF_SIZE - lex->alloc_pos);
+		u16 *wstr = widestringAllocator.buffer + widestringAllocator.position;
+		int written = MultiByteToWideChar(CP_UTF8, 0, lex->source + s, lex->pos - s, wstr, len(widestringAllocator.buffer) - widestringAllocator.position);
 		if (unlikely(written == 0)) {
 			fprintf(stderr, "Failed to convert UTF-8 string to UTF-16: %lu.\n", GetLastError());
 			exit(1);
 		}
 		wstr[written] = '\0';
 		lex->pos++;
-		lex->alloc_pos += written + 1;
+		widestringAllocator.position += written + 1;
 		return (Token) {
 			.type = TOKEN_STRING,
 			.value = (uptr) wstr
@@ -86,7 +85,7 @@ Token Lexer_nextToken(Lexer *lex) {
 		usize count = 0;
 		for (usize count = 0; count < 6; ++count) {
 			lex->pos++;
-			u8 ch = lex->string[lex->pos];
+			u8 ch = lex->source[lex->pos];
 			if (!isValidColorComponent(ch)) {
 				return (Token) {
 					.type = TOKEN_INVALID_COLOR,
@@ -111,12 +110,12 @@ Token Lexer_nextToken(Lexer *lex) {
 	} else if (ch >= '0' && ch <= '9') {
 		uptr num = ch - '0';
 		lex->pos++;
-		u8 ch = lex->string[lex->pos];
+		u8 ch = lex->source[lex->pos];
 		while (ch >= '0' && ch <= '9') {
 			num *= 10;
 			num += ch - '0';
 			lex->pos++;
-			ch = lex->string[lex->pos];
+			ch = lex->source[lex->pos];
 		}
 		return (Token) {
 			.type = TOKEN_NUMBER,
@@ -126,13 +125,13 @@ Token Lexer_nextToken(Lexer *lex) {
 	usize s = lex->pos;
 	do {
 		lex->pos++;
-	} while (isAlphanumerical(lex->string[lex->pos]));
-	u8 tmp = lex->string[lex->pos];
-	lex->string[lex->pos] = '\0';
-	Token t = getToken(lex->string + s);
-	lex->string[lex->pos] = tmp;
+	} while (isAlphanumerical(lex->source[lex->pos]));
+	u8 tmp = lex->source[lex->pos];
+	lex->source[lex->pos] = '\0';
+	Token t = getToken(lex->source + s);
+	lex->source[lex->pos] = tmp;
 	if (unlikely(t.type == TOKEN_INVALID)) {
-		fprintf(stderr, "The token \"%*.s\", at line %llu, is invalid.\n", (int)(lex->pos - s - 1), lex->string + s, lex->line);
+		fprintf(stderr, "The token \"%*.s\", at line %llu, is invalid.\n", (int)(lex->pos - s - 1), lex->source + s, lex->line);
 	}
 	return t;
 }

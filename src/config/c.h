@@ -72,16 +72,21 @@ typedef struct {
 } TokenData;
 
 typedef struct {
-	char *string;
+	char *source;
 	usize pos;
 	usize line;
-	usize alloc_pos;
 } Lexer;
+
+typedef struct {
+	u16 buffer[WIDESTR_ALLOC_BUFF_SIZE];
+	u16 position;
+} WidestringAllocator;
 
 /* lex.c */
 Lexer Lexer_create(char *source);
 Token Lexer_nextToken(Lexer *lex);
 Token Lexer_peekToken(Lexer *lex);
+extern WidestringAllocator widestringAllocator;
 
 /* map.c */
 Token getToken(char *s);

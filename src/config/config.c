@@ -112,6 +112,7 @@ bool loadConfig(void) {
 	fclose(f);
 
 	setBarDefaults();
+	widestringAllocator.position = 0;
 	Lexer lex = Lexer_create(file_buffer);
 	bool err = parse(&lex);
 	if (err) {
