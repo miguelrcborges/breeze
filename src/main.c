@@ -12,33 +12,12 @@ static const char *processesToKill[] = {
 	"ShellExperienceHost.exe",
 };
 
-void pleaseshowmywindowsonctrlc(int sig) {
-	quit(0);
-}
 
-static void killProcesses(void) {
-	HANDLE snapshot = CreateToolhelp32Snapshot(2, 0);
-
-	if (snapshot) {
-		PROCESSENTRY32 pe32;
-		pe32.dwSize = sizeof(PROCESSENTRY32);
-		if (Process32First(snapshot, &pe32)) {
-			do {
-				for (usize p = 0; p < len(processesToKill); ++p) {
-					if (strcmp(pe32.szExeFile, processesToKill[p]) == 0) {
-						HANDLE process = OpenProcess(1, 0, pe32.th32ProcessID);
-						if (process != 0) {
-							TerminateProcess(process, 1); 
-							CloseHandle(process);
-							break;
-						}
-					}
-				}
-			} while (Process32Next(snapshot, &pe32));
-		}
-		CloseHandle(snapshot);
-	}
-}
+static void setProcessDpi(void);
+static void killProcesses(void);
+static void pleaseshowmywindowsonctrlc(int sig);
+static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk);
+static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam);
 
 
 usize hotkeys_count = 0;
@@ -59,11 +38,6 @@ RECT minutes_rect;
 RECT clock_rect;
 void (*drawBar)(HDC dc);
 
-static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
-	InvalidateRect(bar_window, &clock_rect, FALSE);
-}
-
-static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam);
 
 #ifdef WINDOW
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
@@ -83,6 +57,7 @@ int main(void) {
 		MessageBoxA(NULL, "Breeze is already running.", "Breeze error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
+	setProcessDpi();
 
 	WNDCLASSW barClass = {
 		.hInstance = hInstance,
@@ -167,4 +142,65 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 		}
 	}
 	return result;
+}
+
+
+
+static void setProcessDpi(void) {
+	HMODULE user32_dll = LoadLibraryA("user32.dll");
+	if (user32_dll == NULL) return;
+
+	typedef BOOL (*set_process_dpi_awareness_context)(DPI_AWARENESS_CONTEXT);
+	set_process_dpi_awareness_context fun1 = (set_process_dpi_awareness_context)
+		GetProcAddress(user32_dll, "SetProcessDpiAwarenessContext");
+	if (fun1) {
+		if (fun1(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) goto freedll;
+		if (fun1(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) goto freedll;
+	}
+
+	typedef BOOL (*set_process_dpi_aware)(void);
+	set_process_dpi_aware fun2 = (set_process_dpi_aware)
+		GetProcAddress(user32_dll, "SetProcessDPIAware");
+	if (fun2) {
+		fun2();
+	}
+
+freedll:
+	FreeLibrary(user32_dll);
+}
+
+
+
+void pleaseshowmywindowsonctrlc(int sig) {
+	quit(0);
+}
+
+
+static void killProcesses(void) {
+	HANDLE snapshot = CreateToolhelp32Snapshot(2, 0);
+
+	if (snapshot) {
+		PROCESSENTRY32 pe32;
+		pe32.dwSize = sizeof(PROCESSENTRY32);
+		if (Process32First(snapshot, &pe32)) {
+			do {
+				for (usize p = 0; p < len(processesToKill); ++p) {
+					if (strcmp(pe32.szExeFile, processesToKill[p]) == 0) {
+						HANDLE process = OpenProcess(1, 0, pe32.th32ProcessID);
+						if (process != 0) {
+							TerminateProcess(process, 1); 
+							CloseHandle(process);
+							break;
+						}
+					}
+				}
+			} while (Process32Next(snapshot, &pe32));
+		}
+		CloseHandle(snapshot);
+	}
+}
+
+
+static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
+	InvalidateRect(bar_window, &clock_rect, FALSE);
 }
