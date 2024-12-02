@@ -85,7 +85,7 @@ void loadUserApplicationDirs(void) {
 void loadConfig(void) {
 	hasConfigError = 0;
 	for (usize i = 0; i < hotkeys_count; ++i)
-		UnregisterHotKey(bar_window, i);
+		UnregisterHotKey(bar_window, (int)i);
 
 	char file_buffer[MAX_CONFIG_FILE_SIZE];
 	hotkeys_count = 0;
@@ -123,7 +123,7 @@ void loadConfig(void) {
 		for (usize i = 0; i < hotkeys_count; ++i) {
 			bool err = 1;
 			for (usize tries = 0; tries < 10; ++tries) {
-				if (RegisterHotKey(bar_window, i, hotkeys_buf[i].mod, hotkeys_buf[i].key)) {
+				if (RegisterHotKey(bar_window, (int)i, hotkeys_buf[i].mod, hotkeys_buf[i].key)) {
 					err = 0;
 					break;
 				}
@@ -143,7 +143,7 @@ static void loadDefaultConfig() {
 	for (usize i = 0; i < len(defaultHotkeys); ++i) {
 		bool err = 0;
 		for (usize tries = 0; tries < 10; ++tries) {
-			if (RegisterHotKey(bar_window, i, defaultHotkeys[i].mod, defaultHotkeys[i].key)) {
+			if (RegisterHotKey(bar_window, (int)i, defaultHotkeys[i].mod, defaultHotkeys[i].key)) {
 				break;
 			}
 		}

@@ -116,6 +116,11 @@ static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lp
 				drawBar = drawHorizontal24hClock;
 				break;
 			};
+			default: {
+				MessageBoxA(NULL, "Invalid condition found. Exiting.", "Breeze Adding Hotkey Error", MB_OK | MB_ICONWARNING);
+				quit((void*)1);
+				__builtin_unreachable();
+			}
 		}
 		SetWindowPos(
 			bar_window,
@@ -176,7 +181,8 @@ void kill(void *arg) {
 	PostMessageA(GetForegroundWindow(), WM_CLOSE, 0, 0);
 }
 
-static BOOL CALLBACK visitWindow(HWND w, LPARAM _) {
+static BOOL CALLBACK visitWindow(HWND w, LPARAM __unused) {
+	unused(__unused);
 	if (w == bar_window) return TRUE;
 	if (IsWindowVisible(w)) {
 		for (usize d = 0; d < MAX_DESKTOPS; ++d) {
@@ -222,7 +228,8 @@ void sendToDesktop(void *t_desktop) {
 	windows[desktop][windows_count[desktop]++] = w;
 }
 
-void revealAllWindows(void *_) {
+void revealAllWindows(void *__unused) {
+	unused(__unused);
 	for (usize i = 0; i < MAX_DESKTOPS; ++i) {
 		if (i == current_desktop) continue;
 		for (usize ii = 0; ii < windows_count[i]; ++ii) {
@@ -234,7 +241,8 @@ void revealAllWindows(void *_) {
 	}
 }
 
-void focusNext(void *_) {
+void focusNext(void *__unused) {
+	unused(__unused);
 	HWND w = GetForegroundWindow();
 	w = GetWindow(w, GW_HWNDLAST);
 	while (1) {
@@ -247,7 +255,8 @@ void focusNext(void *_) {
 	SetForegroundWindow(w);
 }
 
-void focusPrev(void *_) {
+void focusPrev(void *__unused) {
+	unused(__unused);
 	HWND w = GetForegroundWindow();
 	do {
 		w = GetWindow(w, GW_HWNDNEXT);
@@ -261,25 +270,25 @@ void focusPrev(void *_) {
 // drawing clocks lol
 static void drawVertical24hClock(HDC dc) {
 	char buf[16];
-	sprintf(buf, "%zu", current_desktop);
+	snprintf(buf, len(buf)-1, "%zu", current_desktop);
 	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 
 	SYSTEMTIME lt;
 	GetLocalTime(&lt);
-	sprintf(buf, "%02hu", lt.wHour);
+	snprintf(buf, len(buf), "%02hu", lt.wHour);
 	DrawTextA(dc, buf, -1, &hours_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
-	sprintf(buf, "%02hu", lt.wMinute);
+	snprintf(buf, len(buf), "%02hu", lt.wMinute);
 	DrawTextA(dc, buf, -1, &minutes_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 }
 
 
 static void drawHorizontal24hClock(HDC dc) {
 	char buf[16];
-	sprintf(buf, "%zu", current_desktop);
+	snprintf(buf, len(buf)-1, "%zu", current_desktop);
 	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_LEFT | DT_SINGLELINE);
 
 	SYSTEMTIME lt;
 	GetLocalTime(&lt);
-	sprintf(buf, "%02hu:%02hu", lt.wHour, lt.wMinute);
+	snprintf(buf, len(buf)-1, "%02hu:%02hu", lt.wHour, lt.wMinute);
 	DrawTextA(dc, buf, -1, &clock_rect, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
 }

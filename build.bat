@@ -2,7 +2,7 @@
 setlocal
 
 set CC=cl
-set DEBUG_FLAGS=/W4 /WX /Oi /Od /Zi
+set DEBUG_FLAGS=/W4 /WX /wd4456 /Oi /Od /Zi
 set RELEASE_FLAGS=/Oi /O2 /GL /GS /DNDEBUG
 set LINKS=user32.lib gdi32.lib shell32.lib
 

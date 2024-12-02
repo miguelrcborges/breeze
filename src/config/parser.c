@@ -173,11 +173,11 @@ static void parseActionAttribute(ParserState *s, uptr action, uptr attr) {
 	switch (attr) {
 		case ATTRIBUTE_KEY: {
 			if (t.type == TOKEN_KEY) {
-				hotkeys_buf[hotkeys_count].key = t.value;
+				hotkeys_buf[hotkeys_count].key = (u32)t.value;
 			} else if (t.type == TOKEN_NUMBER && t.value <= 9) {
-				hotkeys_buf[hotkeys_count].key = t.value + '0';
+				hotkeys_buf[hotkeys_count].key = (u32)(t.value + '0');
 			} else if (t.type == TOKEN_POSITION) {
-				hotkeys_buf[hotkeys_count].key = t.value + VK_LEFT;
+				hotkeys_buf[hotkeys_count].key = (u32)(t.value + VK_LEFT);
 			} else {
 				registerError(s->logs_file, "Expected a key token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return;
@@ -195,7 +195,7 @@ static void parseActionAttribute(ParserState *s, uptr action, uptr attr) {
 				registerError(s->logs_file, "Expected a modifier token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return;
 			}
-			hotkeys_buf[hotkeys_count].mod = t.value;
+			hotkeys_buf[hotkeys_count].mod = (u32)t.value;
 			Lexer_advance(s->lex, s->logs_file);
 			while (s->lex->current_token.type == TOKEN_PLUS) {
 				Lexer_advance(s->lex, s->logs_file);
@@ -205,7 +205,7 @@ static void parseActionAttribute(ParserState *s, uptr action, uptr attr) {
 					return;
 				}
 				Lexer_advance(s->lex, s->logs_file);
-				hotkeys_buf[hotkeys_count].mod |= t.value;
+				hotkeys_buf[hotkeys_count].mod |= (u32)t.value;
 			}
 			return;
 		}
@@ -233,7 +233,7 @@ static void parseDesktops(ParserState *s) {
 		registerError(s->logs_file, "Expected a left brace, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 		return;
 	}
-	usize scope_line = t.line;
+	u32 scope_line = t.line;
 	Lexer_advance(s->lex, s->logs_file);
 
 	for (;;) {
@@ -272,14 +272,14 @@ exit_loop:
 			.arg = (void *)i,
 			.line = scope_line,
 			.fun = switchToDesktop,
-			.key = '0' + i,
+			.key = (u32)('0' + i),
 			.mod = mods._switch
 		};
 		hotkeys_buf[hotkeys_count++] = (Hotkey) {
 			.arg = (void *)i,
 			.line = scope_line,
 			.fun = sendToDesktop,
-			.key = '0' + i,
+			.key = (u32)('0' + i),
 			.mod = mods.send
 		};
 	}
@@ -393,7 +393,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a color token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			foreground = t.value;
+			foreground = (COLORREF)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BACKGROUND: {
@@ -401,7 +401,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a color token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			background = t.value;
+			background = (COLORREF)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_FONT: {
@@ -416,7 +416,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_font_height = t.value;
+			bar_font_height = (DWORD)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_POSITION: {
@@ -424,7 +424,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a position, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_position = t.value;
+			bar_position = (int)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BAR_WIDTH: {
@@ -432,7 +432,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_width = t.value;
+			bar_width = (int)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BAR_PAD: {
@@ -440,7 +440,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_pad = t.value;
+			bar_pad = (int)t.value;
 			return font_str;
 		}
 	} 

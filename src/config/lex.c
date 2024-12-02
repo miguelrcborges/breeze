@@ -68,7 +68,7 @@ void Lexer_advance(Lexer *lex, FILE *logs_file) {
 			return;
 		}
 		u16 *wstr = widestringAllocator.buffer + widestringAllocator.position;
-		int written = MultiByteToWideChar(CP_UTF8, 0, lex->source + s, lex->pos - s, wstr, len(widestringAllocator.buffer) - widestringAllocator.position);
+		u16 written = (u16)MultiByteToWideChar(CP_UTF8, 0, lex->source + s, (int)(lex->pos - s), wstr, (int)(len(widestringAllocator.buffer) - widestringAllocator.position));
 		if (unlikely(written == 0)) {
 			fprintf(stderr, "Failed to convert UTF-8 string to UTF-16: %lu.\n", GetLastError());
 			exit(1);

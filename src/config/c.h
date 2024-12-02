@@ -75,7 +75,7 @@ typedef struct {
 typedef struct {
 	char *source;
 	usize pos;
-	usize line;
+	u32 line;
 	Token current_token;
 } Lexer;
 
