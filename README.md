@@ -9,7 +9,47 @@ Configuration can be done by creating a `breeze.conf` file alongside the binary.
 The configuration is pretty simple. An example one can be seen [here](breeze.conf).
 
 
-### Default Keybinds
+# Building
+
+Get any compiler toolchain. My recommendation is [Clang MinGW](https://github.com/mstorsjo/llvm-mingw).
+
+
+## Clang/GCC with bash
+
+Run: 
+```
+sh build.sh release
+```
+
+By default tries to run with clang. You can change the compiler by setting the CC variable:
+```
+CC=gcc sh build.sh release
+```
+
+
+## MSVC 
+
+On the developer console, run:
+
+```
+build.bat release
+```
+
+
+## Others
+
+If you don't use `bash` with `clang` or `gcc`, or in case you want to try to compile with other compilers, do: 
+
+```
+clang -O2 -flto -s -D_FORTIFY_SOURCE=1 src/main.c -luser32 -lgdi32 -mwindows
+```
+
+Feel free to replace `clang` and the flags with whatever you want.
+
+
+
+
+# Default Keybinds
 
 - `win + e` - Opens explorer's file explorer.
 - `win + r` - Reloads user's configuration.
