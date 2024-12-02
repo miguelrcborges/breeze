@@ -15,7 +15,6 @@ static const char *processesToKill[] = {
 
 static void setProcessDpi(void);
 static void killProcesses(void);
-static void pleaseshowmywindowsonctrlc(int sig);
 static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk);
 static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -39,15 +38,11 @@ RECT clock_rect;
 void (*drawBar)(HDC dc);
 
 
-#ifdef WINDOW
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 	(void)hPrevInstance;
 	(void)lpCmdLine;
 	(void)nShowCmd;
-#else
-int main(void) {
-	HINSTANCE hInstance = GetModuleHandle(NULL);
-#endif
+
 	HANDLE mutex = CreateMutexA(NULL, TRUE, "breeze");
 	if (mutex == NULL) {
 		MessageBoxA(NULL, "Failed to initialize breeze.", "Breeze error", MB_ICONERROR | MB_OK);
@@ -94,11 +89,8 @@ int main(void) {
 	loadUserApplicationDirs();
 	reloadConfig(0);
 
-	signal(SIGINT, pleaseshowmywindowsonctrlc);
-
 	MSG msg;
-	i32 ret;
-	while ((ret = GetMessageW(&msg, 0, 0, 0)) > 0) {
+	while (GetMessageW(&msg, 0, 0, 0) > 0) {
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
 	}
@@ -121,7 +113,6 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 		}
 		case WM_PAINT: {
 			PAINTSTRUCT ps;
-			char buf[16];
 			HDC dc = BeginPaint(hWnd, &ps);
 
 			HBRUSH brush = CreateSolidBrush(background);
@@ -170,12 +161,6 @@ freedll:
 }
 
 
-
-void pleaseshowmywindowsonctrlc(int sig) {
-	quit(0);
-}
-
-
 static void killProcesses(void) {
 	HANDLE snapshot = CreateToolhelp32Snapshot(2, 0);
 
@@ -202,5 +187,9 @@ static void killProcesses(void) {
 
 
 static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
+	unused(hWnd);
+	unused(MSG);
+	unused(timer);
+	unused(idk);
 	InvalidateRect(bar_window, &clock_rect, FALSE);
 }

@@ -11,6 +11,7 @@ static void drawVertical24hClock(HDC dc);
 static void drawHorizontal24hClock(HDC dc);
 
 static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lparam) {
+	unused(dc);
 	HMONITOR main_mon = (HMONITOR) lparam;
 	if (mon == main_mon) {
 		int x, y, w, h;
@@ -162,8 +163,8 @@ void quit(void *arg) {
 }
 
 void reloadConfig(void *arg) {
-	if (loadConfig())
-		loadDefaultConfig();
+	unused(arg);
+	loadConfig();
 
 	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
 	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
@@ -171,6 +172,7 @@ void reloadConfig(void *arg) {
 }
 
 void kill(void *arg) {
+	unused(arg);
 	PostMessageA(GetForegroundWindow(), WM_CLOSE, 0, 0);
 }
 

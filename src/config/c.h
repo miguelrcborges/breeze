@@ -63,6 +63,7 @@ enum TOKEN_BAR_ATTRIBUTES {
 
 typedef struct {
 	CONFIG_TOKEN_TYPE type;
+	u32 line;
 	uptr value;
 } Token;
 
@@ -75,6 +76,7 @@ typedef struct {
 	char *source;
 	usize pos;
 	usize line;
+	Token current_token;
 } Lexer;
 
 typedef struct {
@@ -82,16 +84,18 @@ typedef struct {
 	u16 position;
 } WidestringAllocator;
 
+/* config.c */
+void registerError(FILE *logs_file, const char *error_fmt, ...);
+
 /* lex.c */
-Lexer Lexer_create(char *source);
-Token Lexer_nextToken(Lexer *lex);
-Token Lexer_peekToken(Lexer *lex);
+Lexer Lexer_create(char *source, FILE *logs_file);
+void Lexer_advance(Lexer *lex, FILE *logs_file);
 extern WidestringAllocator widestringAllocator;
 
 /* map.c */
 Token getToken(char *s);
 
 /* parser.c */
-bool parse(Lexer *lex);
+void parse(Lexer *lex, FILE *logs_file);
 
 #endif

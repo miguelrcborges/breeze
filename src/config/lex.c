@@ -5,16 +5,16 @@
 WidestringAllocator widestringAllocator;
 
 static bool isAlphanumerical(u8 ch) {
-	return ch >= 'a' && ch <= 'z' ||
-		ch >= 'A' && ch <= 'Z' ||
-		ch >= '0' && ch <= '9' ||
-		ch == '_';
+	return (ch >= 'a' && ch <= 'z') ||
+		(ch >= 'A' && ch <= 'Z') ||
+		(ch >= '0' && ch <= '9') ||
+		(ch == '_');
 }
 
 static bool isValidColorComponent(u8 ch) {
-	return ch >= 'a' && ch <= 'f' ||
-		ch >= 'A' && ch <= 'F' ||
-		ch >= '0' && ch <= '9';
+	return (ch >= 'a' && ch <= 'f') ||
+		(ch >= 'A' && ch <= 'F') ||
+		(ch >= '0' && ch <= '9');
 }
 
 
@@ -38,16 +38,19 @@ static void skipIgnore(Lexer *lex) {
 	}
 }
 
-Lexer Lexer_create(char *source) {
-	return (Lexer) {
+Lexer Lexer_create(char *source, FILE *logs_file) {
+	Lexer lex = {
 		.source = source,
 		.pos = 0,
 		.line = 1,
 	};
+	Lexer_advance(&lex, logs_file);
+	return lex;
 }
 
-Token Lexer_nextToken(Lexer *lex) {
+void Lexer_advance(Lexer *lex, FILE *logs_file) {
 	skipIgnore(lex);
+	u32 line = lex->line;
 	u8 ch = lex->source[lex->pos];
 	if (ch == '\'') {
 		usize s = lex->pos + 1;
@@ -58,9 +61,11 @@ Token Lexer_nextToken(Lexer *lex) {
 				lex->line++;
 		} while (ch != '\'' && ch != '\0');
 		if (ch == '\0') {
-			return (Token) {
-				.type = TOKEN_UNTERMINATED_STRING
+			lex->current_token = (Token) {
+				.type = TOKEN_UNTERMINATED_STRING,
+				.line = line
 			};
+			return;
 		}
 		u16 *wstr = widestringAllocator.buffer + widestringAllocator.position;
 		int written = MultiByteToWideChar(CP_UTF8, 0, lex->source + s, lex->pos - s, wstr, len(widestringAllocator.buffer) - widestringAllocator.position);
@@ -71,26 +76,33 @@ Token Lexer_nextToken(Lexer *lex) {
 		wstr[written] = '\0';
 		lex->pos++;
 		widestringAllocator.position += written + 1;
-		return (Token) {
+		lex->current_token = (Token) {
 			.type = TOKEN_STRING,
+			.line = line,
 			.value = (uptr) wstr
 		};
+		return;
+
 	} else if (ch == '\0') {
-		return (Token) {
+		lex->current_token = (Token) {
 			.type = TOKEN_EOF,
-			.value = 0 
+			.line = line,
+			.value = 0
 		};
+		return;
+
 	} else if (ch == '#') {
 		uptr color = 0;
-		usize count = 0;
 		for (usize count = 0; count < 6; ++count) {
 			lex->pos++;
 			u8 ch = lex->source[lex->pos];
 			if (!isValidColorComponent(ch)) {
-				return (Token) {
+				lex->current_token = (Token) {
 					.type = TOKEN_INVALID_COLOR,
+					.line = line,
 					.value = 0
 				};
+				return;
 			}
 			color <<= 4;
 			if (ch >= 'a' && ch <= 'f')
@@ -103,10 +115,13 @@ Token Lexer_nextToken(Lexer *lex) {
 		lex->pos++;
 		// convert rrggbb to bbggrr
 		color = ((color & 0xff0000) >> 16) | (color & 0x00ff00) | ((color & 0x0000ff) << 16);
-		return (Token) {
+		lex->current_token = (Token) {
 			.type = TOKEN_COLOR,
+			.line = line,
 			.value = color
 		};
+		return;
+
 	} else if (ch >= '0' && ch <= '9') {
 		uptr num = ch - '0';
 		lex->pos++;
@@ -117,10 +132,13 @@ Token Lexer_nextToken(Lexer *lex) {
 			lex->pos++;
 			ch = lex->source[lex->pos];
 		}
-		return (Token) {
+
+		lex->current_token = (Token) {
 			.type = TOKEN_NUMBER,
+			.line = line,
 			.value = num
 		};
+		return;
 	}
 	usize s = lex->pos;
 	do {
@@ -128,19 +146,15 @@ Token Lexer_nextToken(Lexer *lex) {
 	} while (isAlphanumerical(lex->source[lex->pos]));
 	u8 tmp = lex->source[lex->pos];
 	lex->source[lex->pos] = '\0';
-	Token t = getToken(lex->source + s);
-	lex->source[lex->pos] = tmp;
-	if (unlikely(t.type == TOKEN_INVALID)) {
-		fprintf(stderr, "The token \"%*.s\", at line %llu, is invalid.\n", (int)(lex->pos - s - 1), lex->source + s, lex->line);
+	lex->current_token = getToken(lex->source + s);
+	lex->current_token.line = line;
+	if (unlikely(lex->current_token.type == TOKEN_INVALID)) {
+		registerError(logs_file, "The token \"%s\", at line %lu, is invalid.\n", lex->source + s, line);
 	}
-	return t;
+	lex->source[lex->pos] = tmp;
+	return;
 }
 
 Token Lexer_peekToken(Lexer *lex) {
-	usize pos = lex->pos;
-	usize line = lex->line;
-	Token t = Lexer_nextToken(lex);
-	lex->pos = pos;
-	lex->line = line;
-	return t;
+	return lex->current_token;
 }

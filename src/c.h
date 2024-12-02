@@ -5,6 +5,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 
+#define unused(x) (void)(x)
+
 enum CONSTANTS {
 	MAX_HOTKEYS = 1024,
 	MAX_CONFIG_FILE_SIZE = 65535,
@@ -33,7 +35,7 @@ const u16 *default_bar_font_str = L"Tahoma";
 typedef struct {
 	void (*fun)(void *arg);
 	void *arg;
-	usize line;
+	u32 line;
 	u32 key;
 	u32 mod;
 } Hotkey;
@@ -51,8 +53,7 @@ void focusPrev(void *arg);
 void revealAllWindows(void *arg);
 
 /* config */
-bool loadConfig(void);
-void loadDefaultConfig(void);
+void loadConfig(void);
 void loadUserApplicationDirs(void);
 
 /* main.c */
