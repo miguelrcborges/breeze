@@ -128,8 +128,13 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 			EndPaint(hWnd, &ps);
 			break;
 		}
+		case WM_DISPLAYCHANGE: {
+			reloadConfig(0);
+			break;
+		}
 		default: {
 			result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
+			break;
 		}
 	}
 	return result;
