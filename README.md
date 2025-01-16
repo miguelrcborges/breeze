@@ -69,6 +69,7 @@ Feel free to replace `clang` and the flags with whatever you want.
 - [X] System bar (clock / virtual desktop id)
 - [X] Application Launcher (separate tool)
 - [X] Dynamic Dispatch DPI awareness and act acordingly
+- [X] Custom bar drawing as a plugin (through the use of dynamic linking)
+    - You can override `BreezeState`'s `bar.draw_function` function pointer during `BreezePluginSetup`.
 - [ ] Override Windows taken hotkeys (through the use of a LLK Hook)
-- [ ] Custom bar drawing as a plugin (through the use of dynamic linking)
 - [ ] Wallpaper support
