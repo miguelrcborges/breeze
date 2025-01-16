@@ -32,7 +32,7 @@ static bool actionRequiresArg[ACTION_COUNT] = {
 	[ACTION_COMMAND_LINE] = 1,
 };
 
-static void (*actionMap[ACTION_COUNT])(void *arg) = {
+static HotkeyFunction *actionMap[ACTION_COUNT] = {
 	[ACTION_SPAWN] = spawn,
 	[ACTION_COMMAND_LINE] = spawnWithoutConsole,
 	[ACTION_RELOAD] = reloadConfig,
@@ -71,24 +71,24 @@ enum ParserStateFlags {
 };
 
 
-static void parseAction(ParserState *s, uptr action, u32 line);
-static void parseActionAttribute(ParserState *s, uptr action, uptr attr);
-static void parseDesktops(ParserState *s);
-static DesktopsMods parseDesktopsAttribute(ParserState *s, DesktopsMods mods, uptr attr);
-static void parseBar(ParserState *s);
-static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr attr);
+static void parseAction(BreezeState *b, ParserState *s, uptr action, u32 line);
+static void parseActionAttribute(BreezeState *b, ParserState *s, Hotkey *current_hotkey, uptr action, uptr attr);
+static void parseDesktops(BreezeState *b, ParserState *s);
+static DesktopsMods parseDesktopsAttribute(BreezeState *b, ParserState *s, DesktopsMods mods, uptr attr);
+static void parseBar(BreezeState *b, ParserState *s);
+static const u16 *parseBarAttribute(BreezeState *b, ParserState *s, const u16 *font_str, uptr attr);
 
-void parse(Lexer *lex, FILE *logs_file) {
+void parse(BreezeState *breezeState, Lexer *lex, FILE *logs_file) {
 	ParserState p = {
 		.lex = lex,
 		.logs_file = logs_file
 	};
 	for (;;) {
 		Token t = lex->current_token;
-		Lexer_advance(lex, logs_file);
+		Lexer_advance(breezeState, lex, logs_file);
 		switch (t.type) {
 			case TOKEN_ACTION: {
-				parseAction(&p, t.value, t.line);
+				parseAction(breezeState, &p, t.value, t.line);
 				break;
 			}
 			case TOKEN_DESKTOPS: {
@@ -97,7 +97,7 @@ void parse(Lexer *lex, FILE *logs_file) {
 					return;
 				}
 				p.flags |= PARSERSTATE_HASDESKTOP;
-				parseDesktops(&p);
+				parseDesktops(breezeState, &p);
 				break;
 			}
 			case TOKEN_BAR: {
@@ -106,7 +106,7 @@ void parse(Lexer *lex, FILE *logs_file) {
 					return;
 				}
 				p.flags |= PARSERSTATE_HASBAR;
-				parseBar(&p);
+				parseBar(breezeState, &p);
 				break;
 			}
 			case TOKEN_EOF: {
@@ -119,9 +119,9 @@ void parse(Lexer *lex, FILE *logs_file) {
 	}
 }
 
-static void parseAction(ParserState *s, uptr action, u32 line) {
-	hotkeys_buf[hotkeys_count] = (Hotkey){
-		.fun = actionMap[action], 
+static void parseAction(BreezeState *b, ParserState *s, uptr action, u32 line) {
+	Hotkey current_hotkey = {
+		.fun = actionMap[action],
 		.line = line
 	};
 	Token t = s->lex->current_token;
@@ -129,14 +129,14 @@ static void parseAction(ParserState *s, uptr action, u32 line) {
 		registerError(s->logs_file, "Expected a left brace, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 		return;
 	}
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 
 	for (;;) {
 		Token t = s->lex->current_token; 
-		Lexer_advance(s->lex, s->logs_file);
+		Lexer_advance(b, s->lex, s->logs_file);
 		switch (t.type) {
 			case TOKEN_ACTION_ATTRIBUTE: {
-				parseActionAttribute(s, action, t.value);
+				parseActionAttribute(b, s, &current_hotkey, action, t.value);
 				break;
 			}
 			case TOKEN_EOF: {
@@ -152,40 +152,39 @@ static void parseAction(ParserState *s, uptr action, u32 line) {
 		}
 	}
 exit_loop:
-	if (!likely(hotkeys_buf[hotkeys_count].key && hotkeys_buf[hotkeys_count].mod && (!actionRequiresArg[action] || hotkeys_buf[hotkeys_count].arg))) {
-		registerError(s->logs_file, "Not enough attributes defined in the action created at line %lu.\n", hotkeys_buf[hotkeys_count].line);
-
+	if (!likely(current_hotkey.key && current_hotkey.mod && (!actionRequiresArg[action] || current_hotkey.arg))) {
+		registerError(s->logs_file, "Not enough attributes defined in the action created at line %lu.\n", current_hotkey.line);
 	} else {
-		hotkeys_count += 1;
+		InsertValue(b->hotkeys, current_hotkey, b);
 	}
 end:
 	return;
 }
 
-static void parseActionAttribute(ParserState *s, uptr action, uptr attr) {
+static void parseActionAttribute(BreezeState *b, ParserState *s, Hotkey *hk, uptr action, uptr attr) {
 	Token t = s->lex->current_token;
 	if (t.type != TOKEN_EQUAL) {
 		registerError(s->logs_file, "Expected a = operator, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 		return;
 	}
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 	t = s->lex->current_token;
 	switch (attr) {
 		case ATTRIBUTE_KEY: {
 			if (t.type == TOKEN_KEY) {
-				hotkeys_buf[hotkeys_count].key = (u32)t.value;
+				hk->key = (u32)t.value;
 			} else if (t.type == TOKEN_NUMBER && t.value <= 9) {
-				hotkeys_buf[hotkeys_count].key = (u32)(t.value + '0');
+				hk->key = (u32)(t.value + '0');
 			} else if (t.type == TOKEN_POSITION) {
-				hotkeys_buf[hotkeys_count].key = (u32)(t.value + VK_LEFT);
+				hk->key = (u32)(t.value + VK_LEFT);
 			} else {
 				registerError(s->logs_file, "Expected a key token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return;
 			}
-			Lexer_advance(s->lex, s->logs_file);
+			Lexer_advance(b, s->lex, s->logs_file);
 			if (s->lex->current_token.type == TOKEN_PLUS) {
 				registerError(s->logs_file, "You can only assign one key per hotkey. Error at line %lu.\n", t.line);
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 				return;
 			}
 			break;
@@ -195,38 +194,38 @@ static void parseActionAttribute(ParserState *s, uptr action, uptr attr) {
 				registerError(s->logs_file, "Expected a modifier token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return;
 			}
-			hotkeys_buf[hotkeys_count].mod = (u32)t.value;
-			Lexer_advance(s->lex, s->logs_file);
+			hk->mod = (u32)t.value;
+			Lexer_advance(b, s->lex, s->logs_file);
 			while (s->lex->current_token.type == TOKEN_PLUS) {
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 				t = s->lex->current_token;
 				if (t.type != TOKEN_MODIFIER) {
 					registerError(s->logs_file, "Expected a modifier token after +, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 					return;
 				}
-				Lexer_advance(s->lex, s->logs_file);
-				hotkeys_buf[hotkeys_count].mod |= (u32)t.value;
+				Lexer_advance(b, s->lex, s->logs_file);
+				hk->mod |= (u32)t.value;
 			}
 			return;
 		}
 		case ATTRIBUTE_ARG: {
-			Lexer_advance(s->lex, s->logs_file);
+			Lexer_advance(b, s->lex, s->logs_file);
 			if (!actionRequiresArg[action]) {
-				registerError(s->logs_file, "The action %s, created at line %lu, musn't have an arg attribute.\n", actionStrings[action], hotkeys_buf[hotkeys_count].line);
+				registerError(s->logs_file, "The action %s, created at line %lu, musn't have an arg attribute.\n", actionStrings[action], hk->line);
 				return;
 			}
 			if (t.type != TOKEN_STRING) {
 				registerError(s->logs_file, "Expected a string token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return;
 			}
-			hotkeys_buf[hotkeys_count].arg = (u16 *)t.value;
+			hk->arg = (u16 *)t.value;
 			return;
 		}
 	} 
 }
 
 
-static void parseDesktops(ParserState *s) {
+static void parseDesktops(BreezeState *b, ParserState *s) {
 	DesktopsMods mods = {};
 	Token t = s->lex->current_token;
 	if (t.type != TOKEN_LBRACE) {
@@ -234,14 +233,14 @@ static void parseDesktops(ParserState *s) {
 		return;
 	}
 	u32 scope_line = t.line;
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 
 	for (;;) {
 		t = s->lex->current_token; 
 		switch (t.type) {
 			case TOKEN_DESKTOPS_ATTRIBUTE: {
-				Lexer_advance(s->lex, s->logs_file);
-				mods = parseDesktopsAttribute(s, mods, t.value);
+				Lexer_advance(b, s->lex, s->logs_file);
+				mods = parseDesktopsAttribute(b, s, mods, t.value);
 				break;
 			}
 			case TOKEN_EOF: {
@@ -249,12 +248,12 @@ static void parseDesktops(ParserState *s) {
 				goto end;
 			}
 			case TOKEN_RBRACE: {
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 				goto exit_loop;
 			}
 			default: {
 				registerError(s->logs_file, "Expected a desktops attribute, got %s at line %lu.\n", tokenStrings[t.type], t.line);
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 			}
 		}
 	}
@@ -268,32 +267,34 @@ exit_loop:
 		return;
 	}
 	for (usize i = 0; i <= 9; ++i) {
-		hotkeys_buf[hotkeys_count++] = (Hotkey) {
+		Hotkey switch_to_desktop = {
 			.arg = (void *)i,
 			.line = scope_line,
 			.fun = switchToDesktop,
 			.key = (u32)('0' + i),
 			.mod = mods._switch
 		};
-		hotkeys_buf[hotkeys_count++] = (Hotkey) {
+		Hotkey send_to_desktop = {
 			.arg = (void *)i,
 			.line = scope_line,
 			.fun = sendToDesktop,
 			.key = (u32)('0' + i),
 			.mod = mods.send
 		};
+		InsertValue(b->hotkeys, switch_to_desktop, b);
+		InsertValue(b->hotkeys, send_to_desktop, b);
 	}
 end:
 	return;
 }
 
-static DesktopsMods parseDesktopsAttribute(ParserState *s, DesktopsMods mods, uptr attr) {
+static DesktopsMods parseDesktopsAttribute(BreezeState *b, ParserState *s, DesktopsMods mods, uptr attr) {
 	Token t = s->lex->current_token;
 	if (t.type != TOKEN_EQUAL) {
 		registerError(s->logs_file, "Expected a = operator, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 		return mods;
 	}
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 	t = s->lex->current_token;
 	switch (attr) {
 		case ATTRIBUTE_SEND_TO_DESKTOP: {
@@ -302,17 +303,17 @@ static DesktopsMods parseDesktopsAttribute(ParserState *s, DesktopsMods mods, up
 				return mods;
 			}
 			mods.send |= t.value;
-			Lexer_advance(s->lex, s->logs_file);
+			Lexer_advance(b, s->lex, s->logs_file);
 			t = s->lex->current_token;
 			while (t.type == TOKEN_PLUS) {
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 				t = s->lex->current_token;
 				if (t.type != TOKEN_MODIFIER) {
 					registerError(s->logs_file, "Expected a modifier token after +, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 					return mods;
 				}
 				mods.send |= t.value;
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 			}
 			return mods;
 		}
@@ -322,17 +323,17 @@ static DesktopsMods parseDesktopsAttribute(ParserState *s, DesktopsMods mods, up
 				return mods;
 			}
 			mods._switch |= t.value;
-			Lexer_advance(s->lex, s->logs_file);
+			Lexer_advance(b, s->lex, s->logs_file);
 			t = s->lex->current_token;
 			while (t.type == TOKEN_PLUS) {
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 				t = s->lex->current_token;
 				if (t.type != TOKEN_MODIFIER) {
 					registerError(s->logs_file, "Expected a modifier token after +, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 					return mods;
 				}
 				mods._switch |= t.value;
-				Lexer_advance(s->lex, s->logs_file);
+				Lexer_advance(b, s->lex, s->logs_file);
 			}
 			return mods;
 		}
@@ -342,7 +343,7 @@ static DesktopsMods parseDesktopsAttribute(ParserState *s, DesktopsMods mods, up
 }
 
 
-static void parseBar(ParserState *s) {
+static void parseBar(BreezeState *b, ParserState *s) {
 	const u16 *font_str = default_bar_font_str;
 	Token t = s->lex->current_token;
 	if (t.type != TOKEN_LBRACE) {
@@ -350,14 +351,14 @@ static void parseBar(ParserState *s) {
 		return;
 	}
 	u32 scope_line = t.line;
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 
 	for (;;) {
 		t = s->lex->current_token; 
-		Lexer_advance(s->lex, s->logs_file);
+		Lexer_advance(b, s->lex, s->logs_file);
 		switch (t.type) {
 			case TOKEN_BAR_ATTRIBUTE: {
-				font_str = parseBarAttribute(s, font_str, t.value);
+				font_str = parseBarAttribute(b, s, font_str, t.value);
 				break;
 			}
 			case TOKEN_EOF: {
@@ -373,27 +374,27 @@ static void parseBar(ParserState *s) {
 		}
 	}
 end:
-	bar_font = CreateFontW(bar_font_height, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, font_str);
+	b->bar.current_font = CreateFontW(b->bar.font_height, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, font_str);
 	return;
 }
 
-static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr attr) {
+static const u16 *parseBarAttribute(BreezeState *b, ParserState *s, const u16 *font_str, uptr attr) {
 	Token t = s->lex->current_token;
 	if (t.type != TOKEN_EQUAL) {
 		registerError(s->logs_file, "Expected a = operator, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 		return font_str;
 	}
 
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 	t = s->lex->current_token; 
-	Lexer_advance(s->lex, s->logs_file);
+	Lexer_advance(b, s->lex, s->logs_file);
 	switch (attr) {
 		case ATTRIBUTE_FOREGROUND: {
 			if (t.type != TOKEN_COLOR) {
 				registerError(s->logs_file, "Expected a color token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			foreground = (COLORREF)t.value;
+			b->bar.foreground = (COLORREF)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BACKGROUND: {
@@ -401,7 +402,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a color token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			background = (COLORREF)t.value;
+			b->bar.background = (COLORREF)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_FONT: {
@@ -416,7 +417,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_font_height = (DWORD)t.value;
+			b->bar.font_height = (DWORD)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_POSITION: {
@@ -424,7 +425,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a position, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_position = (int)t.value;
+			b->bar.position = (u8)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BAR_WIDTH: {
@@ -432,7 +433,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_width = (int)t.value;
+			b->bar.width = (u16)t.value;
 			return font_str;
 		}
 		case ATTRIBUTE_BAR_PAD: {
@@ -440,7 +441,7 @@ static const u16 *parseBarAttribute(ParserState *s, const u16 *font_str, uptr at
 				registerError(s->logs_file, "Expected a number token, got %s at line %lu.\n", tokenStrings[t.type], t.line);
 				return font_str;
 			}
-			bar_pad = (int)t.value;
+			b->bar.padding = (u16)t.value;
 			return font_str;
 		}
 	} 

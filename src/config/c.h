@@ -79,23 +79,18 @@ typedef struct {
 	Token current_token;
 } Lexer;
 
-typedef struct {
-	u16 buffer[WIDESTR_ALLOC_BUFF_SIZE];
-	u16 position;
-} WidestringAllocator;
 
 /* config.c */
 void registerError(FILE *logs_file, const char *error_fmt, ...);
 
 /* lex.c */
-Lexer Lexer_create(char *source, FILE *logs_file);
-void Lexer_advance(Lexer *lex, FILE *logs_file);
-extern WidestringAllocator widestringAllocator;
+Lexer Lexer_create(BreezeState *breezeState, char *source, FILE *logs_file);
+void Lexer_advance(BreezeState *breezeState, Lexer *lex, FILE *logs_file);
 
 /* map.c */
 Token getToken(char *s);
 
 /* parser.c */
-void parse(Lexer *lex, FILE *logs_file);
+void parse(BreezeState *state, Lexer *lex, FILE *logs_file);
 
 #endif

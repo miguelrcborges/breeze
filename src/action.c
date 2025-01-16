@@ -5,125 +5,63 @@
 static HWND focused_window[MAX_DESKTOPS];
 static HWND windows[MAX_DESKTOPS][MAX_WINDOWS_PER_DESKTOP];
 static usize windows_count[MAX_DESKTOPS];
-static usize current_desktop = 1;
 
-static void drawVertical24hClock(HDC dc);
-static void drawHorizontal24hClock(HDC dc);
+typedef struct {
+	BreezeState *state;
+	HMONITOR main_monitor;
+} UpdateWorkAreaLPARAM;
 
 static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lparam) {
 	unused(dc);
-	HMONITOR main_mon = (HMONITOR) lparam;
-	if (mon == main_mon) {
+
+	UpdateWorkAreaLPARAM *args = (UpdateWorkAreaLPARAM *)lparam;
+	if (mon == args->main_monitor) {
 		int x, y, w, h;
-		switch (bar_position) {
+		switch (args->state->bar.position) {
 			case BAR_LEFT: {
 				x = rect->left;
 				y = rect->top;
-				w = bar_width;
+				w = args->state->bar.width;
 				h = rect->bottom - rect->top;
-				rect->left += bar_width;
-
-				desktop_rect.left = 0;
-				desktop_rect.right = w;
-				hours_rect.left = 0;
-				hours_rect.right = w;
-				minutes_rect.left = 0;
-				minutes_rect.right = w;
-				clock_rect.left = 0;
-				clock_rect.right = w;
-
-				desktop_rect.top = bar_pad;
-				desktop_rect.bottom = desktop_rect.top + bar_font_height;
-
-				minutes_rect.bottom = h - bar_pad;
-				minutes_rect.top = minutes_rect.bottom - bar_font_height;
-
-				hours_rect.bottom = minutes_rect.top;
-				hours_rect.top = hours_rect.bottom - bar_font_height;
-
-				clock_rect.top = hours_rect.top;
-				clock_rect.bottom = minutes_rect.bottom;
-				drawBar = drawVertical24hClock;
+				rect->left += args->state->bar.width;
+				args->state->bar.draw_function = drawVertical24hClock;
 				break;
 			};
 			case BAR_TOP: {
 				x = rect->left;
 				y = rect->top;
 				w = rect->right - rect->left;
-				h = bar_width;
-				rect->top += bar_width;
-
-				desktop_rect.top = 0;
-				desktop_rect.bottom = h;
-				clock_rect.top = 0;
-				clock_rect.bottom = h;
-
-				desktop_rect.left = bar_pad;
-				desktop_rect.right = w;
-
-				clock_rect.right = w - bar_pad;
-				clock_rect.left = 0;
-				drawBar = drawHorizontal24hClock;
+				h = args->state->bar.width;
+				rect->top += args->state->bar.width;
+				args->state->bar.draw_function = drawHorizontal24hClock;
 				break;
 			};
 			case BAR_RIGHT: {
-				rect->right -= bar_width;
-				x = rect->right;
+				x = rect->right - args->state->bar.width;
 				y = rect->top;
-				w = bar_width;
+				w = args->state->bar.width;
 				h = rect->bottom - rect->top;
-
-				desktop_rect.left = 0;
-				desktop_rect.right = w;
-				hours_rect.left = 0;
-				hours_rect.right = w;
-				minutes_rect.left = 0;
-				minutes_rect.right = w;
-				clock_rect.left = 0;
-				clock_rect.right = w;
-
-				desktop_rect.top = bar_pad;
-				desktop_rect.bottom = desktop_rect.top + bar_font_height;
-
-				minutes_rect.bottom = h - bar_pad;
-				minutes_rect.top = minutes_rect.bottom - bar_font_height;
-
-				hours_rect.bottom = minutes_rect.top;
-				hours_rect.top = hours_rect.bottom - bar_font_height;
-
-				clock_rect.top = hours_rect.top;
-				clock_rect.bottom = minutes_rect.bottom;
-				drawBar = drawVertical24hClock;
+				rect->right -= args->state->bar.width;
+				args->state->bar.draw_function = drawVertical24hClock;
 				break;
 			};
 			case BAR_BOTTOM: {
-				rect->bottom -= bar_width;
 				x = rect->left;
-				y = rect->bottom;
+				y = rect->bottom - args->state->bar.width;
 				w = rect->right - rect->left;
-				h = bar_width;
-
-				desktop_rect.top = 0;
-				desktop_rect.bottom = h;
-				clock_rect.top = 0;
-				clock_rect.bottom = h;
-
-				desktop_rect.left = bar_pad;
-				desktop_rect.right = w;
-
-				clock_rect.right = w - bar_pad;
-				clock_rect.left = 0;
-				drawBar = drawHorizontal24hClock;
+				h = args->state->bar.width;
+				rect->bottom -= args->state->bar.width;
+				args->state->bar.draw_function = drawHorizontal24hClock;
 				break;
 			};
 			default: {
 				MessageBoxA(NULL, "Invalid condition found. Exiting.", "Breeze Adding Hotkey Error", MB_OK | MB_ICONWARNING);
-				quit((void*)1);
+				quit(args->state, (void*)1);
 				__builtin_unreachable();
 			}
 		}
 		SetWindowPos(
-			bar_window,
+			args->state->bar.window,
 			0,
 			x, y, w, h,
 			SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOSENDCHANGING
@@ -133,8 +71,10 @@ static BOOL CALLBACK updateWorkArea(HMONITOR mon, HDC dc, LPRECT rect, LPARAM lp
 	return 1;
 }
 
-void spawn(void *arg) {
-	u16 *command = arg;
+void spawn(BreezeState *state, void *arg) {
+	unused(state);
+
+	u16 *command = (u16 *)arg;
 
 	STARTUPINFOW si = {
 		.cb = sizeof(STARTUPINFOW)
@@ -146,7 +86,9 @@ void spawn(void *arg) {
 	CloseHandle(pi.hProcess);
 }
 
-void spawnWithoutConsole(void *arg) {
+void spawnWithoutConsole(BreezeState *state, void *arg) {
+	unused(state);
+
 	u16 *command = arg;
 
 	STARTUPINFOW si = {
@@ -159,54 +101,61 @@ void spawnWithoutConsole(void *arg) {
 	CloseHandle(pi.hProcess);
 }
 
-void quit(void *arg) {
+void quit(BreezeState *s, void *arg) {
 	u32 code = (u32)(usize) arg;
 	u16 explorer[] = L"explorer.exe";
-	spawn(explorer);
-	revealAllWindows(NULL);
+	spawn(s, explorer);
+	revealAllWindows(s, NULL);
 	ExitProcess(code);
 }
 
-void reloadConfig(void *arg) {
+void reloadConfig(BreezeState *state, void *arg) {
 	unused(arg);
-	loadConfig();
+	loadConfig(state);
 
 	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
-	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) main_mon);
-	InvalidateRect(bar_window, NULL, TRUE);
+	UpdateWorkAreaLPARAM params = {
+		.main_monitor = main_mon,
+		.state = state
+	};
+	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) &params);
+	InvalidateRect(state->bar.window, NULL, TRUE);
 }
 
-void kill(void *arg) {
+void kill(BreezeState *s, void *arg) {
+	unused(s);
 	unused(arg);
+
 	PostMessageA(GetForegroundWindow(), WM_CLOSE, 0, 0);
 }
 
-static BOOL CALLBACK visitWindow(HWND w, LPARAM __unused) {
-	unused(__unused);
-	if (w == bar_window) return TRUE;
+static BOOL CALLBACK visitWindow(HWND w, LPARAM _breezeState) {
+	BreezeState *breezeState = (BreezeState *)_breezeState;
+	if (w == breezeState->bar.window) return TRUE;
 	if (IsWindowVisible(w)) {
 		for (usize d = 0; d < MAX_DESKTOPS; ++d) {
-			if (d == current_desktop) continue;
+			if (d == breezeState->current_desktop) continue;
 			for (usize i = 0; i < windows_count[d]; ++i) {
 				if (w == windows[d][i]) {
 					windows[d][i] = INVALID_HANDLE_VALUE;
 				}
 			}
 		}
-		windows[current_desktop][windows_count[current_desktop]++] = w;
+		windows[breezeState->current_desktop][windows_count[breezeState->current_desktop]] = w;
+		windows_count[breezeState->current_desktop] += 1;
 		ShowWindow(w, SW_HIDE);
 	} else {
-		EnumChildWindows(w, visitWindow, 0);
+		EnumChildWindows(w, visitWindow, _breezeState);
 	}
 	return TRUE;
 }
 
-void switchToDesktop(void *t_desktop) {
+void switchToDesktop(BreezeState *s, void *t_desktop) {
 	usize desktop = (usize) t_desktop;
-	if (desktop == current_desktop) return;
-	focused_window[current_desktop] = GetForegroundWindow();
-	windows_count[current_desktop] = 0;
-	EnumWindows(visitWindow, 0);
+	if (desktop == s->current_desktop) return;
+	focused_window[s->current_desktop] = GetForegroundWindow();
+	windows_count[s->current_desktop] = 0;
+	EnumWindows(visitWindow, (LPARAM)s);
 	for (size_t i = 0; i < windows_count[desktop]; ++i) {
 		if (IsWindow(windows[desktop][i])) {
 			ShowWindow(windows[desktop][i], SW_SHOW);
@@ -215,23 +164,27 @@ void switchToDesktop(void *t_desktop) {
 	if (IsWindow(focused_window[desktop])) {
 		SetForegroundWindow(focused_window[desktop]);
 	}
-	current_desktop = desktop;
-	InvalidateRect(bar_window, &desktop_rect, FALSE);
+	s->current_desktop = desktop;
+	InvalidateRect(s->bar.window, NULL, FALSE);
 }
 
-void sendToDesktop(void *t_desktop) {
+void sendToDesktop(BreezeState *s, void *t_desktop) {
+	unused(s);
+
 	usize desktop = (usize) t_desktop;
-	if (desktop == current_desktop) return;
+	if (desktop == s->current_desktop) return;
 	HWND w = GetForegroundWindow();
 	if (w == NULL) return;
 	ShowWindow(w, SW_HIDE);
-	windows[desktop][windows_count[desktop]++] = w;
+	windows[desktop][windows_count[desktop]] = w;
+	windows_count[desktop] += 1;
 }
 
-void revealAllWindows(void *__unused) {
+void revealAllWindows(BreezeState *s, void *__unused) {
 	unused(__unused);
+
 	for (usize i = 0; i < MAX_DESKTOPS; ++i) {
-		if (i == current_desktop) continue;
+		if (i == s->current_desktop) continue;
 		for (usize ii = 0; ii < windows_count[i]; ++ii) {
 			if (IsWindow(windows[i][ii])) {
 				ShowWindow(windows[i][ii], SW_SHOW);
@@ -241,8 +194,10 @@ void revealAllWindows(void *__unused) {
 	}
 }
 
-void focusNext(void *__unused) {
+void focusNext(BreezeState *s, void *__unused) {
 	unused(__unused);
+	unused(s);
+
 	HWND w = GetForegroundWindow();
 	w = GetWindow(w, GW_HWNDLAST);
 	while (1) {
@@ -255,40 +210,14 @@ void focusNext(void *__unused) {
 	SetForegroundWindow(w);
 }
 
-void focusPrev(void *__unused) {
+void focusPrev(BreezeState *s, void *__unused) {
 	unused(__unused);
+	unused(s);
+
 	HWND w = GetForegroundWindow();
 	do {
 		w = GetWindow(w, GW_HWNDNEXT);
 		if (unlikely(w == NULL)) return;
 	} while (!IsWindowVisible(w));
 	SetForegroundWindow(w);
-}
-
-
-
-// drawing clocks lol
-static void drawVertical24hClock(HDC dc) {
-	char buf[16];
-	snprintf(buf, len(buf)-1, "%zu", current_desktop);
-	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
-
-	SYSTEMTIME lt;
-	GetLocalTime(&lt);
-	snprintf(buf, len(buf), "%02hu", lt.wHour);
-	DrawTextA(dc, buf, -1, &hours_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
-	snprintf(buf, len(buf), "%02hu", lt.wMinute);
-	DrawTextA(dc, buf, -1, &minutes_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
-}
-
-
-static void drawHorizontal24hClock(HDC dc) {
-	char buf[16];
-	snprintf(buf, len(buf)-1, "%zu", current_desktop);
-	DrawTextA(dc, buf, -1, &desktop_rect, DT_VCENTER | DT_LEFT | DT_SINGLELINE);
-
-	SYSTEMTIME lt;
-	GetLocalTime(&lt);
-	snprintf(buf, len(buf)-1, "%02hu:%02hu", lt.wHour, lt.wMinute);
-	DrawTextA(dc, buf, -1, &clock_rect, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
 }

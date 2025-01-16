@@ -7,8 +7,8 @@
 #include "parser.c"
 
 
-static void loadDefaultConfig();
-static void setBarDefaults();
+static void loadDefaultConfig(BreezeState *state);
+static void resetState(BreezeState *state);
 
 static u16 explorer[] = L"explorer.exe file:";
 static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
@@ -82,17 +82,16 @@ void loadUserApplicationDirs(void) {
 }
 
 
-void loadConfig(void) {
+void loadConfig(BreezeState *state) {
 	hasConfigError = 0;
-	for (usize i = 0; i < hotkeys_count; ++i)
-		UnregisterHotKey(bar_window, (int)i);
+	for (usize i = 0; i < state->hotkeys.length; ++i)
+		UnregisterHotKey(state->bar.window, (int)i);
 
 	char file_buffer[MAX_CONFIG_FILE_SIZE];
-	hotkeys_count = 0;
 
 	FILE *f = fopen("breeze.conf", "r");
 	if (f == NULL) {
-		loadDefaultConfig();
+		loadDefaultConfig(state);
 		return;
 	}
 
@@ -101,7 +100,7 @@ void loadConfig(void) {
 	long len = ftell(f);
 	if (len >= MAX_CONFIG_FILE_SIZE) {
 		registerError(logs_file, "File too long.");
-		loadDefaultConfig();
+		loadDefaultConfig(state);
 		if (likely(logs_file)) fclose(logs_file);
 		return;
 	}
@@ -111,39 +110,38 @@ void loadConfig(void) {
 	file_buffer[read] = '\0';
 	fclose(f);
 
-	setBarDefaults();
-	widestringAllocator.position = 0;
-	Lexer lex = Lexer_create(file_buffer, logs_file);
-	parse(&lex, logs_file);
+	resetState(state);
+	Lexer lex = Lexer_create(state, file_buffer, logs_file);
+	parse(state, &lex, logs_file);
 	if (likely(logs_file)) fclose(logs_file);
 	if (hasConfigError) {
-		loadDefaultConfig();
+		loadDefaultConfig(state);
 	} else {
-		puts("Loading user's configuration.");
-		for (usize i = 0; i < hotkeys_count; ++i) {
+		for (usize i = 0; i < state->hotkeys.length; i += 1) {
 			bool err = 1;
-			for (usize tries = 0; tries < 10; ++tries) {
-				if (RegisterHotKey(bar_window, (int)i, hotkeys_buf[i].mod, hotkeys_buf[i].key)) {
+			for (usize tries = 0; tries < 10; tries += 1) {
+				if (RegisterHotKey(state->bar.window, (int)i, state->hotkeys.buffer[i].mod, state->hotkeys.buffer[i].key)) {
 					err = 0;
 					break;
 				}
 			}
 			if (err) {
 				char buffer[1024];
-				snprintf(buffer, len(buffer)-1, "Failed to register hotkey defined by the action created at line %u.\n", hotkeys_buf[i].line);
+				snprintf(buffer, len(buffer)-1, "Failed to register hotkey defined by the action created at line %u.\n", state->hotkeys.buffer[i].line);
 				MessageBoxA(NULL, buffer, "Breeze Adding Hotkey Error", MB_OK | MB_ICONWARNING);
 			}
 		}
-		hotkeys = hotkeys_buf;
 	}
 	return;
 }
 
-static void loadDefaultConfig() {
+
+static void loadDefaultConfig(BreezeState *state) {
+	resetState(state);
 	for (usize i = 0; i < len(defaultHotkeys); ++i) {
 		bool err = 0;
 		for (usize tries = 0; tries < 10; ++tries) {
-			if (RegisterHotKey(bar_window, (int)i, defaultHotkeys[i].mod, defaultHotkeys[i].key)) {
+			if (RegisterHotKey(state->bar.window, (int)i, defaultHotkeys[i].mod, defaultHotkeys[i].key)) {
 				break;
 			}
 		}
@@ -152,21 +150,26 @@ static void loadDefaultConfig() {
 			exit(1);
 		}
 	}
-	hotkeys = defaultHotkeys;
-	hotkeys_count = len(defaultHotkeys);
-	setBarDefaults();
+	state->hotkeys.current = defaultHotkeys;
+	state->hotkeys.length = len(defaultHotkeys);
 }
 
 
-static void setBarDefaults() {
-	if (bar_font != default_bar_font) DeleteObject(bar_font);
-	foreground = BAR_DEFAULT_FOREGROUND;
-	background = BAR_DEFAULT_BACKGROUND;
-	bar_font_height = BAR_DEFAULT_FONT_HEIGHT;
-	bar_font = default_bar_font;
-	bar_position = BAR_RIGHT;
-	bar_width = BAR_DEFAULT_WIDTH;
-	bar_pad = BAR_DEFAULT_PAD; 
+static void resetState(BreezeState *state) {
+	if (state->bar.current_font != state->bar.default_font) DeleteObject(state->bar.current_font);
+	state->bar.current_font = state->bar.default_font;
+	state->bar.foreground = BAR_DEFAULT_FOREGROUND;
+	state->bar.background = BAR_DEFAULT_BACKGROUND;
+	state->bar.font_height = BAR_DEFAULT_FONT_HEIGHT;
+	state->bar.position = BAR_RIGHT;
+	state->bar.width = BAR_DEFAULT_WIDTH;
+	state->bar.padding = BAR_DEFAULT_PAD;
+	state->bar.draw_function = drawVertical24hClock; // Serves as nil if for some reason isn't reassigned 
+
+	state->hotkeys.length = 0;
+	state->hotkeys.current = state->hotkeys.buffer;
+
+	state->widestring_allocator.length = 0;
 }
 
 
