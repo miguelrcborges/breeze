@@ -11,7 +11,7 @@ static void loadDefaultConfig(BreezeState *state);
 static void resetState(BreezeState *state);
 
 static u16 explorer[] = L"explorer.exe file:";
-static u16 terminal[] = L"conhost.exe -- cmd /k cd %%USERPROFILE%";
+static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
 static u16 userapps[512];
 static u16 systemapps[512];
 static bool hasConfigError;
@@ -117,6 +117,7 @@ void loadConfig(BreezeState *state) {
 	if (hasConfigError) {
 		loadDefaultConfig(state);
 	} else {
+		state->hotkeys.current = state->hotkeys.buffer;
 		for (usize i = 0; i < state->hotkeys.length; i += 1) {
 			bool err = 1;
 			for (usize tries = 0; tries < 10; tries += 1) {
@@ -167,7 +168,6 @@ static void resetState(BreezeState *state) {
 	state->bar.draw_function = drawVertical24hClock; // Serves as nil if for some reason isn't reassigned 
 
 	state->hotkeys.length = 0;
-	state->hotkeys.current = state->hotkeys.buffer;
 
 	state->widestring_allocator.length = 0;
 }

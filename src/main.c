@@ -92,7 +92,7 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 	LRESULT result = 0;
 	switch (uMsg) {
 		case WM_TIMER: {
-			UpdateWindow(hWnd);
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
 		case WM_HOTKEY: {
