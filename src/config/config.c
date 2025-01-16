@@ -11,7 +11,7 @@ static void loadDefaultConfig(BreezeState *state);
 static void resetState(BreezeState *state);
 
 static u16 explorer[] = L"explorer.exe file:";
-static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
+static u16 terminal[] = L"conhost.exe -- cmd /k cd %%USERPROFILE%";
 static u16 userapps[512];
 static u16 systemapps[512];
 static bool hasConfigError;

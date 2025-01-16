@@ -41,6 +41,19 @@ void drawVertical24hClock(BreezeState *state) {
 	snprintf(buf, len(buf), "%02hu", lt.wMinute);
 	DrawTextA(dc, buf, -1, &minutes_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 
+
+	SYSTEM_POWER_STATUS batt;
+	GetSystemPowerStatus(&batt);
+	if (batt.BatteryLifePercent != 255) {
+		RECT battery_rect = bar_rect;
+		battery_rect.bottom -= state->bar.padding;
+		battery_rect.top = battery_rect.bottom - state->bar.font_height;
+		bar_rect.bottom = battery_rect.top;
+
+		snprintf(buf, len(buf), "%hhu", batt.BatteryLifePercent);
+		DrawTextA(dc, buf, -1, &battery_rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+	}
+
 	EndPaint(state->bar.window, &ps);
 }
 
@@ -61,13 +74,19 @@ void drawHorizontal24hClock(BreezeState *state) {
 	bar_rect.left += state->bar.padding;
 	bar_rect.right -= state->bar.padding;
 
-	char buf[16];
+	char buf[32];
 	snprintf(buf, len(buf)-1, "%zu", state->current_desktop);
 	DrawTextA(dc, buf, -1, &bar_rect, DT_VCENTER | DT_LEFT | DT_SINGLELINE);
 
 	SYSTEMTIME lt;
 	GetLocalTime(&lt);
-	snprintf(buf, len(buf)-1, "%02hu:%02hu", lt.wHour, lt.wMinute);
+	SYSTEM_POWER_STATUS batt;
+	GetSystemPowerStatus(&batt);
+	if (batt.BatteryLifePercent != 255) {
+		snprintf(buf, len(buf)-1, "%hhu    %02hu:%02hu", batt.BatteryLifePercent, lt.wHour, lt.wMinute);
+	} else {
+		snprintf(buf, len(buf)-1, "%02hu:%02hu", lt.wHour, lt.wMinute);
+	}
 	DrawTextA(dc, buf, -1, &bar_rect, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
 
 	EndPaint(state->bar.window, &ps);

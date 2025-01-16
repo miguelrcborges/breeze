@@ -98,7 +98,7 @@ static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lP
 		case WM_HOTKEY: {
 			usize id = (usize) wParam;
 			if (id < breezeState.hotkeys.length) {
-				breezeState.hotkeys.buffer[id].fun(&breezeState, breezeState.hotkeys.buffer[id].arg);
+				breezeState.hotkeys.current[id].fun(&breezeState, breezeState.hotkeys.current[id].arg);
 			}
 			break;
 		}
