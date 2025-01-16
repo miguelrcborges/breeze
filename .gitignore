@@ -3,4 +3,5 @@
 *.obj
 *.o
 *.ilk
+*.dll
 breeze.log

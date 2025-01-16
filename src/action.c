@@ -111,7 +111,34 @@ void quit(BreezeState *s, void *arg) {
 
 void reloadConfig(BreezeState *state, void *arg) {
 	unused(arg);
+	if (state->breeze_plugin != NULL) {
+		PluginCleanupFunction *cleanup_f = (PluginCleanupFunction *)GetProcAddress(state->breeze_plugin, "BreezePluginCleanup");
+		if (cleanup_f) {
+			cleanup_f(state);
+		}
+		FreeLibrary(state->breeze_plugin);
+		state->breeze_plugin = NULL;
+	}
+
 	loadConfig(state);
+
+	DWORD check_if_breeze_plugin_exists = GetFileAttributesA("breeze_plugin.dll");
+	if (check_if_breeze_plugin_exists != INVALID_FILE_ATTRIBUTES) {
+		BOOL copy_successful = CopyFile("breeze_plugin.dll", "breeze_plugin_temporary_copy.dll", FALSE);
+		if (!copy_successful) {
+			MessageBoxA(NULL, "Failed to copy the plugin dll to a temporary file.\nContinuing while ignoring the plugin dll.", "Breeze Plugin Loading Error", MB_OK | MB_ICONWARNING);
+		} else {
+			state->breeze_plugin = LoadLibraryA("breeze_plugin_temporary_copy.dll");
+			if (state->breeze_plugin == NULL) {
+				MessageBoxA(NULL, "Failed to load the plugin copy.", "Breeze Plugin Loading Error", MB_OK | MB_ICONWARNING);
+			} else {
+				PluginSetupFunction *setup_fun = (PluginSetupFunction *)GetProcAddress(state->breeze_plugin, "BreezePluginSetup");
+				if (setup_fun) {
+					setup_fun(state);
+				}
+			}
+		}
+	}
 
 	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
 	UpdateWorkAreaLPARAM params = {

@@ -31,7 +31,9 @@ enum BAR_POSITIONS {
 };
 
 typedef struct BreezeState BreezeState;
-typedef void DrawFunction(BreezeState *state);
+typedef void PluginSetupFunction(BreezeState *state);
+typedef void DrawBarFunction(BreezeState *state);
+typedef void PluginCleanupFunction(BreezeState *state);
 typedef void HotkeyFunction(BreezeState *state, void *arg);
 
 typedef struct {
@@ -51,7 +53,7 @@ struct BreezeState {
 		usize capacity;
 	} hotkeys;
 	struct {
-		DrawFunction *draw_function;
+		DrawBarFunction *draw_function;
 		HWND window;
 		HFONT default_font;
 		HFONT current_font;
@@ -67,6 +69,8 @@ struct BreezeState {
 		usize length;
 		usize capacity;
 	} widestring_allocator;
+	HMODULE breeze_plugin;
+	void *plugin_data;
 	usize current_desktop;
 };
 
