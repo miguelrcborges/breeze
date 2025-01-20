@@ -122,6 +122,14 @@ void reloadConfig(BreezeState *state, void *arg) {
 
 	loadConfig(state);
 
+	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
+	UpdateWorkAreaLPARAM params = {
+		.main_monitor = main_mon,
+		.state = state
+	};
+	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) &params);
+	InvalidateRect(state->bar.window, NULL, TRUE);
+
 	DWORD check_if_breeze_plugin_exists = GetFileAttributesA("breeze_plugin.dll");
 	if (check_if_breeze_plugin_exists != INVALID_FILE_ATTRIBUTES) {
 		BOOL copy_successful = CopyFile("breeze_plugin.dll", "breeze_plugin_temporary_copy.dll", FALSE);
@@ -139,14 +147,6 @@ void reloadConfig(BreezeState *state, void *arg) {
 			}
 		}
 	}
-
-	HMONITOR main_mon = MonitorFromPoint((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
-	UpdateWorkAreaLPARAM params = {
-		.main_monitor = main_mon,
-		.state = state
-	};
-	EnumDisplayMonitors(0, NULL, updateWorkArea, (LPARAM) &params);
-	InvalidateRect(state->bar.window, NULL, TRUE);
 }
 
 void kill(BreezeState *s, void *arg) {
