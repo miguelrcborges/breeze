@@ -38,7 +38,7 @@ RECT clock_rect;
 void (*drawBar)(HDC dc);
 
 
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 	(void)hPrevInstance;
 	(void)lpCmdLine;
 	(void)nShowCmd;

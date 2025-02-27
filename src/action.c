@@ -194,7 +194,7 @@ static BOOL CALLBACK visitWindow(HWND w, LPARAM __unused) {
 			}
 		}
 		windows[current_desktop][windows_count[current_desktop]++] = w;
-		ShowWindow(w, SW_HIDE);
+		ShowWindowAsync(w, SW_HIDE);
 	} else {
 		EnumChildWindows(w, visitWindow, 0);
 	}
@@ -209,7 +209,7 @@ void switchToDesktop(void *t_desktop) {
 	EnumWindows(visitWindow, 0);
 	for (size_t i = 0; i < windows_count[desktop]; ++i) {
 		if (IsWindow(windows[desktop][i])) {
-			ShowWindow(windows[desktop][i], SW_SHOW);
+			ShowWindowAsync(windows[desktop][i], SW_SHOW);
 		}
 	}
 	if (IsWindow(focused_window[desktop])) {
