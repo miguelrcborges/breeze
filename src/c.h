@@ -30,49 +30,85 @@ enum BAR_POSITIONS {
 	BAR_BOTTOM
 };
 
-const u16 *default_bar_font_str = L"Tahoma";
+typedef struct BreezeState BreezeState;
+typedef void PluginSetupFunction(BreezeState *state);
+typedef void DrawBarFunction(BreezeState *state);
+typedef void PluginCleanupFunction(BreezeState *state);
+typedef void HotkeyFunction(BreezeState *state, void *arg);
 
 typedef struct {
-	void (*fun)(void *arg);
+	HotkeyFunction *fun;
 	void *arg;
 	u32 line;
 	u32 key;
 	u32 mod;
 } Hotkey;
 
+
+struct BreezeState {
+	struct {
+		Hotkey *current;
+		Hotkey *buffer;
+		usize length;
+		usize capacity;
+	} hotkeys;
+	struct {
+		DrawBarFunction *draw_function;
+		HWND window;
+		HFONT default_font;
+		HFONT current_font;
+		COLORREF background;
+		COLORREF foreground;
+		DWORD font_height;
+		u16 padding;
+		u16 width;
+		u8 position;
+	} bar;
+	struct {
+		u16 *buffer;
+		usize length;
+		usize capacity;
+	} widestring_allocator;
+	HMODULE breeze_plugin;
+	void *plugin_data;
+	usize current_desktop;
+};
+
+#define InsertValue(vector, value, breezeState) do { \
+		if (vector.length == vector.capacity) { \
+			vector.buffer = realloc(vector.buffer, vector.capacity * (2 * sizeof(vector.buffer[0]))); \
+			if (vector.buffer == NULL) { \
+				MessageBoxA(NULL, "Went out of memory, exiting.", "Breeze error", MB_ICONERROR | MB_OK); \
+				quit(breezeState, (void *)1); \
+			} \
+			vector.capacity *= 2; \
+		} \
+		vector.buffer[vector.length] = value; \
+		vector.length += 1; \
+	} while(0);
+
+static const u16 *default_bar_font_str = L"Tahoma";
+
+
 /* action.c */
-void spawn(void *arg);
-void spawnWithoutConsole(void *arg);
-void quit(void *arg);
-void reloadConfig(void *arg);
-void kill(void *arg);
-void switchToDesktop(void *arg);
-void sendToDesktop(void *arg);
-void focusNext(void *arg);
-void focusPrev(void *arg);
-void revealAllWindows(void *arg);
+void spawn(BreezeState *state, void *arg);
+void spawnWithoutConsole(BreezeState *state, void *arg);
+void quit(BreezeState *state, void *arg);
+void reloadConfig(BreezeState *state, void *arg);
+void kill(BreezeState *state, void *arg);
+void switchToDesktop(BreezeState *state, void *arg);
+void sendToDesktop(BreezeState *state, void *arg);
+void focusNext(BreezeState *state, void *arg);
+void focusPrev(BreezeState *state, void *arg);
+void revealAllWindows(BreezeState *state, void *arg);
 
 /* config */
-void loadConfig(void);
+void loadConfig(BreezeState *breezeState);
 void loadUserApplicationDirs(void);
 
-/* main.c */
-extern usize hotkeys_count;
-extern Hotkey hotkeys_buf[MAX_HOTKEYS];
-extern Hotkey *hotkeys;
-extern HWND bar_window;
-extern HFONT default_bar_font;
-extern HFONT bar_font;
-extern DWORD bar_font_height;
-extern COLORREF background;
-extern COLORREF foreground;
-extern int bar_position;
-extern int bar_pad;
-extern int bar_width;
-extern RECT desktop_rect;
-extern RECT hours_rect;
-extern RECT minutes_rect;
-extern RECT clock_rect;
-extern void (*drawBar)(HDC dc);
+/* default_bars.c */
+void drawVertical24hClock(BreezeState *breezeState);
+void drawHorizontal24hClock(BreezeState *breezeState);
+
 
 #endif

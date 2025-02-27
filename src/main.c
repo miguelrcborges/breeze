@@ -3,6 +3,7 @@
 #include <signal.h>
 
 #include "action.c"
+#include "default_bars.c"
 #include "config/config.c"
 
 static const char *processesToKill[] = {
@@ -15,27 +16,9 @@ static const char *processesToKill[] = {
 
 static void setProcessDpi(void);
 static void killProcesses(void);
-static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk);
 static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam);
 
-
-usize hotkeys_count = 0;
-Hotkey *hotkeys = NULL;
-Hotkey hotkeys_buf[MAX_HOTKEYS];
-HWND bar_window;
-HFONT default_bar_font;
-HFONT bar_font;
-COLORREF background;
-COLORREF foreground;
-DWORD bar_font_height;
-int bar_position;
-int bar_pad;
-int bar_width;
-RECT desktop_rect;
-RECT hours_rect;
-RECT minutes_rect;
-RECT clock_rect;
-void (*drawBar)(HDC dc);
+static BreezeState breezeState;
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
@@ -54,6 +37,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 	setProcessDpi();
 
+
 	WNDCLASSW barClass = {
 		.hInstance = hInstance,
 		.lpszClassName = L"breeze-bar",
@@ -65,13 +49,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 1;
 	}
 
-	default_bar_font = CreateFontW(BAR_DEFAULT_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, default_bar_font_str);
-	if (default_bar_font == NULL) {
+	breezeState.current_desktop = 1;
+	breezeState.widestring_allocator.capacity = 4096;
+	breezeState.widestring_allocator.buffer = calloc(breezeState.widestring_allocator.capacity, sizeof(breezeState.widestring_allocator.buffer[0]));
+	breezeState.hotkeys.capacity = 32;
+	breezeState.hotkeys.buffer = calloc(breezeState.hotkeys.capacity, sizeof(breezeState.hotkeys.buffer[0]));
+	breezeState.bar.default_font = CreateFontW(BAR_DEFAULT_FONT_HEIGHT, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, default_bar_font_str);
+	if (breezeState.bar.default_font == NULL) {
 		MessageBoxA(NULL, "Faield to create a fallback font using a font already preinstalled.", "Breeze error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	bar_window = CreateWindowExW(
+	breezeState.bar.window = CreateWindowExW(
 		WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
 		L"breeze-bar",
 		L"breeze-bar",
@@ -83,53 +72,47 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		NULL
 	);
 
-	u64 timer = SetTimer(bar_window, 1, BAR_INVALIDATE_CLOCK_DURATION, invalidateClock);
+	SetTimer(breezeState.bar.window, 1, BAR_INVALIDATE_CLOCK_DURATION, NULL);
 
 	killProcesses();
 	loadUserApplicationDirs();
-	reloadConfig(0);
+	reloadConfig(&breezeState, 0);
 
+	ShowWindow(breezeState.bar.window, SW_SHOW);
 	MSG msg;
 	while (GetMessageW(&msg, 0, 0, 0) > 0) {
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
 	}
-
-	KillTimer(bar_window, timer);
-	if (bar_font != default_bar_font) DeleteObject(bar_font);
-	DeleteObject(default_bar_font);
 	return 0;
 }
+
 
 static LRESULT CALLBACK barHandler(HWND hWnd, u32 uMsg, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
 	switch (uMsg) {
+		case WM_TIMER: {
+			InvalidateRect(hWnd, NULL, TRUE);
+			break;
+		}
 		case WM_HOTKEY: {
 			usize id = (usize) wParam;
-			if (id < hotkeys_count) {
-				hotkeys[id].fun(hotkeys[id].arg);
+			if (id < breezeState.hotkeys.length) {
+				breezeState.hotkeys.current[id].fun(&breezeState, breezeState.hotkeys.current[id].arg);
 			}
 			break;
 		}
 		case WM_PAINT: {
-			PAINTSTRUCT ps;
-			HDC dc = BeginPaint(hWnd, &ps);
-
-			HBRUSH brush = CreateSolidBrush(background);
-			FillRect(dc, &(ps.rcPaint), brush);
-			DeleteObject(brush);
-
-			SetBkMode(dc, TRANSPARENT);
-			SelectObject(dc, bar_font);
-			SetTextColor(dc, foreground);
-
-			drawBar(dc);
-
-			EndPaint(hWnd, &ps);
+			breezeState.bar.draw_function(&breezeState);
+			break;
+		}
+		case WM_DISPLAYCHANGE: {
+			reloadConfig(&breezeState, 0);
 			break;
 		}
 		default: {
 			result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
+			break;
 		}
 	}
 	return result;
@@ -183,13 +166,4 @@ static void killProcesses(void) {
 		}
 		CloseHandle(snapshot);
 	}
-}
-
-
-static void CALLBACK invalidateClock(HWND hWnd, u32 MSG, u64 timer, DWORD idk) {
-	unused(hWnd);
-	unused(MSG);
-	unused(timer);
-	unused(idk);
-	InvalidateRect(bar_window, &clock_rect, FALSE);
 }

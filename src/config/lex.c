@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 
-WidestringAllocator widestringAllocator;
 
 static bool isAlphanumerical(u8 ch) {
 	return (ch >= 'a' && ch <= 'z') ||
@@ -38,17 +37,17 @@ static void skipIgnore(Lexer *lex) {
 	}
 }
 
-Lexer Lexer_create(char *source, FILE *logs_file) {
+Lexer Lexer_create(BreezeState *b, char *source, FILE *logs_file) {
 	Lexer lex = {
 		.source = source,
 		.pos = 0,
 		.line = 1,
 	};
-	Lexer_advance(&lex, logs_file);
+	Lexer_advance(b, &lex, logs_file);
 	return lex;
 }
 
-void Lexer_advance(Lexer *lex, FILE *logs_file) {
+void Lexer_advance(BreezeState *b, Lexer *lex, FILE *logs_file) {
 	skipIgnore(lex);
 	u32 line = lex->line;
 	u8 ch = lex->source[lex->pos];
@@ -67,15 +66,27 @@ void Lexer_advance(Lexer *lex, FILE *logs_file) {
 			};
 			return;
 		}
-		u16 *wstr = widestringAllocator.buffer + widestringAllocator.position;
-		u16 written = (u16)MultiByteToWideChar(CP_UTF8, 0, lex->source + s, (int)(lex->pos - s), wstr, (int)(len(widestringAllocator.buffer) - widestringAllocator.position));
+		// +1 to be NULL terminated
+		usize widestr_len = (usize)MultiByteToWideChar(CP_UTF8, 0, lex->source + s, (int)(lex->pos - s), NULL, 0) + 1;
+		if (b->widestring_allocator.length + widestr_len > b->widestring_allocator.capacity) {
+			usize new_capacity = b->widestring_allocator.capacity > widestr_len ? b->widestring_allocator.capacity : widestr_len;
+			b->widestring_allocator.capacity += new_capacity;
+			b->widestring_allocator.buffer = realloc(b->widestring_allocator.buffer, b->widestring_allocator.capacity * sizeof(b->widestring_allocator.buffer[0])); 
+			if (b->widestring_allocator.buffer == NULL) {
+				MessageBoxA(NULL, "Went out of memory, exiting.", "Breeze error", MB_ICONERROR | MB_OK);
+				quit(b, (void *)0);
+			}
+		}
+
+		u16 *wstr = b->widestring_allocator.buffer + b->widestring_allocator.length;
+		usize written = (usize)MultiByteToWideChar(CP_UTF8, 0, lex->source + s, (int)(lex->pos - s), wstr, (int)(b->widestring_allocator.capacity - b->widestring_allocator.length));
 		if (unlikely(written == 0)) {
 			fprintf(stderr, "Failed to convert UTF-8 string to UTF-16: %lu.\n", GetLastError());
-			exit(1);
+			quit(b, (void *)1);
 		}
 		wstr[written] = '\0';
 		lex->pos++;
-		widestringAllocator.position += written + 1;
+		b->widestring_allocator.length += written + 1;
 		lex->current_token = (Token) {
 			.type = TOKEN_STRING,
 			.line = line,
@@ -153,8 +164,4 @@ void Lexer_advance(Lexer *lex, FILE *logs_file) {
 	}
 	lex->source[lex->pos] = tmp;
 	return;
-}
-
-Token Lexer_peekToken(Lexer *lex) {
-	return lex->current_token;
 }
