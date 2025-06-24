@@ -118,6 +118,8 @@ static void LoadConfig(BreezeState *state, uptr unused) {
 								state->Plugins.buffer[state->Plugins.count].cleanup_function = BreezePluginCleanupStub;
 								setup(state);
 								state->Plugins.count += 1;
+							} else {
+								FreeLibrary(dll_module);
 							}
 						}
 					}
