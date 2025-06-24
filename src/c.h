@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <tlhelp32.h>
+#include <shlobj.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -89,7 +90,10 @@ struct BreezeState {
 	} Hotkeys;
 	u16 PluginFlags;
 	struct {
-		BreezePluginCleanupFunction *cleanup_function[32];
+		struct {
+			HMODULE dll_module;
+			BreezePluginCleanupFunction *cleanup_function;
+		} buffer[32];
 		BreezePluginWorkspaceChangeCallback *workspace_change_callback;
 		i32 count;
 	} Plugins;

@@ -68,11 +68,17 @@ static Hotkey default_hotkeys[] = {
 	TAG(8),
 	TAG(9),
 };
+#undef TAG
 
 
 static void LoadConfig(BreezeState *state, uptr unused) {
 	for (i32 i = 0; i < state->Plugins.count; i += 1) {
-		state->Plugins.cleanup_function[i]();
+		state->Plugins.buffer[i].cleanup_function();
+		HMODULE m = state->Plugins.buffer[i].dll_module;
+		if (m != NULL) {
+			FreeLibrary(m);
+			state->Plugins.buffer[i].dll_module = NULL;
+		}
 	}
 	state->Plugins.count = 0;
 	state->PluginFlags = 0;
@@ -85,9 +91,44 @@ static void LoadConfig(BreezeState *state, uptr unused) {
 	memcpy(&(state->Hotkeys.buffer), default_hotkeys, sizeof(default_hotkeys));
 	state->Hotkeys.count = len(default_hotkeys);
 
-	// TODO: Load all plugins
+	char plugins_dir[MAX_PATH];
+	BOOL s = SHGetSpecialFolderPathA(NULL, plugins_dir, CSIDL_LOCAL_APPDATA, TRUE);
+	if (s) {
+		int len = (int)strlen(plugins_dir);
+		if (sizeof(plugins_dir) - len > sizeof("\\breeze\\plugins\\*")) {
+			int slash_index = len + sizeof("\\breeze\\plugins\\") - 1;
+			memcpy(plugins_dir + len, "\\breeze\\plugins\\*", sizeof("\\breeze\\plugins\\*"));
+			WIN32_FIND_DATAA fd;
+			HANDLE find_handle = FindFirstFileA(plugins_dir, &fd);
+			if (find_handle != INVALID_HANDLE_VALUE) {
+				do {
+					int c1 = strcmp(fd.cFileName, ".") != 0;
+					int c2 = strcmp(fd.cFileName, "..") != 0;
+					char *file_extension = strrchr(fd.cFileName, '.');
+					int c3 = _stricmp(file_extension, ".dll") == 0;
+					int filename_len = (int)strlen(fd.cFileName) + 1; // With 0 byte
+					int c4 = slash_index + filename_len < sizeof(plugins_dir);
+					if (c1 && c2 && c3 && c4) {
+						memcpy(plugins_dir + slash_index, fd.cFileName, filename_len);
+						HMODULE dll_module = LoadLibraryA(plugins_dir);
+						if (dll_module) {
+							BreezePluginSetupFunction *setup = (BreezePluginSetupFunction *)GetProcAddress(dll_module, "BreezePluginSetup");
+							if (setup) {
+								state->Plugins.buffer[state->Plugins.count].dll_module = dll_module;
+								state->Plugins.buffer[state->Plugins.count].cleanup_function = BreezePluginCleanupStub;
+								setup(state);
+								state->Plugins.count += 1;
+							}
+						}
+					}
+				} while (FindNextFileA(find_handle, &fd) != 0 && state->Plugins.count < 32);
+				FindClose(find_handle);
+			}
+		}
+	}
+
 	if (!(state->PluginFlags & PLUGIN_BAR)) {
-		state->Plugins.cleanup_function[state->Plugins.count] = BreezePluginCleanupStub;
+		state->Plugins.buffer[state->Plugins.count].cleanup_function = BreezePluginCleanupStub;
 		SetupDefaultBar(state);
 		state->Plugins.count += 1;
 	}

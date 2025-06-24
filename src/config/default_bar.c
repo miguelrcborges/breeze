@@ -35,7 +35,7 @@ static BreezePluginSetupFunction(SetupDefaultBar) {
 
 	font = CreateFontW(font_height, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 0, 0, font_name);
 
-	state->Plugins.cleanup_function[state->Plugins.count] = DefaultBarCleanup;
+	state->Plugins.buffer[state->Plugins.count].cleanup_function = DefaultBarCleanup;
 	previousWorkspaceCallback = state->Plugins.workspace_change_callback;
 	state->Plugins.workspace_change_callback = DefaultBarWorkspaceCallback;
 	current_workspace = state->current_workspace;
