@@ -40,7 +40,7 @@ static BreezePluginSetupFunction(SetupDefaultBar) {
 	state->Plugins.workspace_change_callback = DefaultBarWorkspaceCallback;
 	current_workspace = state->current_workspace;
 
-	RECT *main_monitor_rect = &state->Monitors.buffer[state->Monitors.main_monitor_index].monitor_area;
+	RECT *main_monitor_rect = &state->Monitors.buffer[state->Monitors.main_monitor_index].work_area;
 	i32 bar_x = main_monitor_rect->left;
 	i32 bar_y = main_monitor_rect->top;
 	i32 bar_width = main_monitor_rect->right - main_monitor_rect->left;

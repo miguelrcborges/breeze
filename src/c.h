@@ -13,6 +13,13 @@
 #include "mbbase.h"
 
 
+#define MAX_MONITORS 8
+#define MAX_WORKSPACES 10
+#define MAX_WINDOWS 2048
+#define MAX_HOTKEYS 1024
+#define MAX_IGNORE_WINDOWS 512
+#define MAX_PLUGINS 32
+
 typedef struct BreezeState BreezeState;
 
 #define HotkeyFunction(f) void f(BreezeState *state, uptr arg)
@@ -49,7 +56,8 @@ typedef struct i32x2 {
 
 typedef struct Window {
 	HWND handle;
-	i8x2 dwm_border;
+	u16 next_workspace_window;
+	u16 prev_workspace_window;
 	i8 monitor_index;
 	i8 workspace;
 } Window;
@@ -64,27 +72,30 @@ typedef struct Monitor {
 	i32 width;
 	i32 height;
 	i32 dpi;
-	RECT monitor_area;
+	RECT work_area;
 } Monitor;
 
 struct BreezeState {
 	HINSTANCE hInstance;
 	i8 current_workspace;
 	struct {
-		HWND buffer[32];
+		HWND buffer[MAX_IGNORE_WINDOWS];
 		i32 count;
 	} IgnoreWindows;
 	struct {
-		Monitor buffer[8];
+		Monitor buffer[MAX_MONITORS];
 		i8 main_monitor_index;
 		i32 count;
 	} Monitors;
 	struct {
-		Window buffer[1024];
-		i32 count;
+		Window buffer[MAX_WINDOWS];
+		u16 first_free_index;
+		i32 buffer_alloc_pos;
+		HWND last_focused_window[MAX_WORKSPACES];
+		u16 current_workspace_window[MAX_MONITORS][MAX_WORKSPACES];
 	} Windows;
 	struct {
-		Hotkey buffer[255];
+		Hotkey buffer[MAX_HOTKEYS];
 		i32 count;
 		u16 modifiers_state;
 	} Hotkeys;
@@ -93,7 +104,7 @@ struct BreezeState {
 		struct {
 			HMODULE dll_module;
 			BreezePluginCleanupFunction *cleanup_function;
-		} buffer[32];
+		} buffer[MAX_PLUGINS];
 		BreezePluginWorkspaceChangeCallback *workspace_change_callback;
 		i32 count;
 	} Plugins;

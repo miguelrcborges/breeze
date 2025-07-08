@@ -3,18 +3,13 @@
 #include "actions.c"
 #include "config/config.c"
 
-static BreezeState breezeState;
-static HRESULT (*p_DwmGetWindowAttribute)(HWND hwnd, DWORD dwm_attribute, PVOID attribute_p, DWORD size_attribute);
-
 static BOOL CALLBACK AddCurrentTopLevelWindows(HWND hwnd, LPARAM lParam);
 static void CALLBACK WindowHandlerCallback(HWINEVENTHOOK eh, DWORD ev, HWND hwnd, LONG obj_id, LONG child_id, DWORD thread_id, DWORD dwm_time);
 static LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam);
-static void SetupFunctionPointers(void);
 static void SetProcessDPI(void);
 static void KillExplorerRelatedProcesses(void);
-static i8x2 GetDwmBordersStub(HWND hwnd);
-static i8x2 GetDwmBordersDwmQuery(HWND hwnd);
-static i8x2 (*GetDwmBorders)(HWND hwnd) = GetDwmBordersStub;
+
+static BreezeState breezeState;
 
 
 int WinMain(
@@ -25,10 +20,10 @@ int WinMain(
 ) {
 	breezeState.current_workspace = 1;
 	breezeState.hInstance = instance;
+	breezeState.Windows.buffer_alloc_pos = 1;
 
 	SetProcessDPI();
 	KillExplorerRelatedProcesses();
-	SetupFunctionPointers();
 
 	HWINEVENTHOOK windows_hook = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_SHOW, NULL, WindowHandlerCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
 	EnumWindows(AddCurrentTopLevelWindows, 0);
@@ -52,12 +47,30 @@ static BOOL CALLBACK AddCurrentTopLevelWindows(HWND hwnd, LPARAM lParam) {
 		RECT rect;
 		GetClientRect(hwnd, &rect);
 		if ((rect.right - rect.left) > 0 && (rect.bottom - rect.top) > 0) {
-			i32 i = breezeState.Windows.count;
+			i32 i = breezeState.Windows.buffer_alloc_pos;
 			breezeState.Windows.buffer[i].handle = hwnd;
 			breezeState.Windows.buffer[i].workspace = 1; 
-			breezeState.Windows.buffer[i].dwm_border = GetDwmBorders(hwnd);
-			breezeState.Windows.buffer[i].monitor_index = breezeState.Monitors.main_monitor_index;
-			breezeState.Windows.count += 1;
+			breezeState.Windows.buffer[i].monitor_index += breezeState.Monitors.main_monitor_index;
+			breezeState.Windows.buffer_alloc_pos += 1;
+			for (i32 m = 0; m < breezeState.Monitors.count; m += 1) {
+				RECT mr = breezeState.Monitors.buffer[m].work_area;
+				bool c1 = rect.left >= mr.left && rect.top >= mr.top;
+				bool c2 = rect.right <= mr.right && rect.bottom <= mr.bottom;
+				breezeState.Windows.buffer[i].monitor_index = c1 && c2 ? (i8) m : breezeState.Windows.buffer[i].monitor_index;
+			}
+
+			i8 m = breezeState.Windows.buffer[i].monitor_index;
+			breezeState.Windows.buffer[i].next_workspace_window = 0;
+			if (breezeState.Windows.current_workspace_window[m][1] == 0) {
+				breezeState.Windows.current_workspace_window[m][1] = (i8) i;
+				breezeState.Windows.buffer[i].prev_workspace_window = (u16) i;
+				breezeState.Windows.buffer[i].next_workspace_window = (u16) i;
+			} else {
+				u16 cw = breezeState.Windows.current_workspace_window[m][1];
+				breezeState.Windows.buffer[i].next_workspace_window = breezeState.Windows.buffer[cw].next_workspace_window;
+				breezeState.Windows.buffer[cw].next_workspace_window = (u16) i;
+				breezeState.Windows.buffer[i].prev_workspace_window = (u16) cw;
+			}
 		}
 	}
 	return TRUE;
@@ -67,31 +80,76 @@ static BOOL CALLBACK AddCurrentTopLevelWindows(HWND hwnd, LPARAM lParam) {
 static void WindowHandlerCallback(HWINEVENTHOOK eh, DWORD ev, HWND hwnd, LONG obj_id, LONG child_id, DWORD thread_id, DWORD dwm_time) {
 	if (obj_id == OBJID_WINDOW && GetParent(hwnd) == NULL) {
 		if (ev == EVENT_OBJECT_SHOW) {
-			int window_existed = 0;
-			for (i32 i = 0; i < breezeState.Windows.count; i += 1) {
+			int new_window = 1;
+			int valid_window = 1;
+			for (i32 i = 0; i < breezeState.Windows.buffer_alloc_pos; i += 1) {
 				if (hwnd == breezeState.Windows.buffer[i].handle) {
-					window_existed = 1;
+					new_window = 0;
+					breezeState.Windows.buffer[i].workspace = breezeState.current_workspace;
 					break;
 				}
 			}
-			if (!window_existed) {
+			if (new_window) {
+				for (i32 i = 0; i < breezeState.IgnoreWindows.count; i += 1) {
+					if (hwnd == breezeState.IgnoreWindows.buffer[i]) {
+						valid_window = 0;
+						break;
+					}
+				}
+			}
+			if (new_window && valid_window) {
 				RECT rect;
 				GetClientRect(hwnd, &rect);
 				if ((rect.right - rect.left) > 0 && (rect.bottom - rect.top) > 0) {
-					i32 i = breezeState.Windows.count;
+					i32 i;
+					if (breezeState.Windows.first_free_index != 0) {
+						i = breezeState.Windows.first_free_index;
+						breezeState.Windows.first_free_index = breezeState.Windows.buffer[i].next_workspace_window;
+					} else {
+						i = breezeState.Windows.buffer_alloc_pos;
+						breezeState.Windows.buffer_alloc_pos += 1;
+					}
 					breezeState.Windows.buffer[i].handle = hwnd;
 					breezeState.Windows.buffer[i].workspace = breezeState.current_workspace;
-					breezeState.Windows.buffer[i].dwm_border = GetDwmBorders(hwnd);
-					breezeState.Windows.count += 1;
+					breezeState.Windows.buffer[i].monitor_index += breezeState.Monitors.main_monitor_index;
+					for (i32 m = 0; m < breezeState.Monitors.count; m += 1) {
+						RECT mr = breezeState.Monitors.buffer[m].work_area;
+						bool c1 = rect.left >= mr.left && rect.top >= mr.top;
+						bool c2 = rect.right <= mr.right && rect.bottom <= mr.bottom;
+						breezeState.Windows.buffer[i].monitor_index = c1 && c2 ? (i8) m : breezeState.Windows.buffer[i].monitor_index;
+					}
+					i8 m = breezeState.Windows.buffer[i].monitor_index;
+					i8 w = breezeState.current_workspace;
+					breezeState.Windows.buffer[i].next_workspace_window = 0;
+					if (breezeState.Windows.current_workspace_window[m][w] == 0) {
+						breezeState.Windows.current_workspace_window[m][w] = (i8) i;
+						breezeState.Windows.buffer[i].prev_workspace_window = (u16) i;
+						breezeState.Windows.buffer[i].next_workspace_window = (u16) i;
+					} else {
+						u16 cw = breezeState.Windows.current_workspace_window[m][w];
+						breezeState.Windows.buffer[i].next_workspace_window = breezeState.Windows.buffer[cw].next_workspace_window;
+						breezeState.Windows.buffer[cw].next_workspace_window = (u16) i;
+						breezeState.Windows.buffer[i].prev_workspace_window = (u16) cw;
+					}
+					SetActiveWindow(hwnd);
 				}
 			}
 		} else {
-			for (i32 i = 0; i < breezeState.Windows.count; i += 1) {
+			for (i32 i = 0; i < breezeState.Windows.buffer_alloc_pos; i += 1) {
 				if (hwnd == breezeState.Windows.buffer[i].handle) {
-					for (i32 ii = i; ii == breezeState.Windows.count - 1; ii += 1) {
-						breezeState.Windows.buffer[ii] = breezeState.Windows.buffer[ii+1];
+					i8 m = breezeState.Windows.buffer[i].monitor_index;
+					i8 w = breezeState.Windows.buffer[i].workspace;
+					if (breezeState.Windows.current_workspace_window[m][w] == i) {
+						breezeState.Windows.current_workspace_window[m][w] = breezeState.Windows.buffer[i].next_workspace_window;
 					}
-					breezeState.Windows.count -= 1;
+					u16 p = breezeState.Windows.buffer[i].prev_workspace_window;
+					u16 n = breezeState.Windows.buffer[i].next_workspace_window;
+					breezeState.Windows.buffer[p].next_workspace_window = n;
+					breezeState.Windows.buffer[n].prev_workspace_window = p;
+					breezeState.Windows.buffer[i].handle = NULL;
+					breezeState.Windows.buffer[i].next_workspace_window = breezeState.Windows.first_free_index;
+					breezeState.Windows.first_free_index = (u16) i;
+					break;
 				}
 			}
 		}
@@ -136,20 +194,6 @@ static LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lP
 		handled = CallNextHookEx(NULL, nCode, wParam, lParam);
 	}
 	return handled;
-}
-
-
-
-static void SetupFunctionPointers(void) {
-	HMODULE dwmapi_dll = LoadLibraryA("dwmapi.dll");
-	if (dwmapi_dll) {
-		typedef HRESULT (*DwmGetWindowAttribute_t)(HWND, DWORD, PVOID, DWORD);
-		DwmGetWindowAttribute_t f = (DwmGetWindowAttribute_t) GetProcAddress(dwmapi_dll, "DwmGetWindowAttribute");
-		if (f) {
-			p_DwmGetWindowAttribute = f;
-			GetDwmBorders = GetDwmBordersDwmQuery;
-		}
-	}
 }
 
 
@@ -207,25 +251,3 @@ static void KillExplorerRelatedProcesses(void) {
 	}
 }
 
-
-static i8x2 GetDwmBordersStub(HWND hwnd) {
-	i8x2 r = {0};
-	return r;
-}
-
-
-static i8x2 GetDwmBordersDwmQuery(HWND hwnd) {
-	i8x2 r = {0};
-	RECT frame_rect;
-	HRESULT hr = p_DwmGetWindowAttribute(hwnd, 9, &frame_rect, sizeof(frame_rect));
-	if (FAILED(hr)) {
-		return r;
-	}
-
-	RECT window_rect;
-	GetWindowRect(hwnd, &window_rect);
-
-	r.x = (i8) (window_rect.left - frame_rect.left);
-	r.y = (i8) (window_rect.top - frame_rect.top);
-	return r;
-}

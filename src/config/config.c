@@ -153,7 +153,7 @@ static BOOL VisitMonitors(HMONITOR monitor_handle, HDC unused_dc, LPRECT monitor
 		.width = monitor_rect->right - monitor_rect->left,
 		.height = monitor_rect->bottom - monitor_rect->top,
 		.dpi = dpi,
-		.monitor_area = *monitor_rect
+		.work_area = *monitor_rect
 	};
 
 	SystemParametersInfoW(SPI_SETWORKAREA, 0, monitor_rect, SPIF_SENDCHANGE | SPIF_UPDATEINIFILE);
