@@ -10,7 +10,7 @@ typedef struct VisitMonitorData {
 } VisitMonitorData;
 
 static int SortHotkeys(const void *_hk1, const void *_hk2);
-static BOOL VisitMonitors(HMONITOR monitor_handle, HDC dc, LPRECT monitor_rect, LPARAM visit_monitor_data);
+static BOOL CALLBACK VisitMonitors(HMONITOR monitor_handle, HDC dc, LPRECT monitor_rect, LPARAM visit_monitor_data);
 
 static u16 file_manager[] = L"explorer.exe file:";
 // static u16 terminal[] = L"conhost.exe -- cmd /k cd %USERPROFILE%";
@@ -138,7 +138,7 @@ static void LoadConfig(BreezeState *state, uptr unused) {
 }
 
 
-static BOOL VisitMonitors(HMONITOR monitor_handle, HDC unused_dc, LPRECT monitor_rect, LPARAM visit_monitor_data) {
+static BOOL CALLBACK VisitMonitors(HMONITOR monitor_handle, HDC unused_dc, LPRECT monitor_rect, LPARAM visit_monitor_data) {
 	VisitMonitorData *data = (VisitMonitorData *)visit_monitor_data;
 	MONITORINFOEXW mi;
 	mi.cbSize = sizeof(MONITORINFOEX);

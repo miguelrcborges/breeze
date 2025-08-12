@@ -12,7 +12,7 @@ static void KillExplorerRelatedProcesses(void);
 static BreezeState breezeState;
 
 
-int WinMain(
+int __stdcall WinMain(
 	HINSTANCE instance, 
 	HINSTANCE prev_instance,
 	LPSTR cmd_line,
@@ -77,7 +77,7 @@ static BOOL CALLBACK AddCurrentTopLevelWindows(HWND hwnd, LPARAM lParam) {
 }
 
 
-static void WindowHandlerCallback(HWINEVENTHOOK eh, DWORD ev, HWND hwnd, LONG obj_id, LONG child_id, DWORD thread_id, DWORD dwm_time) {
+static void CALLBACK WindowHandlerCallback(HWINEVENTHOOK eh, DWORD ev, HWND hwnd, LONG obj_id, LONG child_id, DWORD thread_id, DWORD dwm_time) {
 	if (obj_id == OBJID_WINDOW && GetParent(hwnd) == NULL) {
 		if (ev == EVENT_OBJECT_SHOW) {
 			int new_window = 1;
@@ -131,8 +131,8 @@ static void WindowHandlerCallback(HWINEVENTHOOK eh, DWORD ev, HWND hwnd, LONG ob
 						breezeState.Windows.buffer[cw].next_workspace_window = (u16) i;
 						breezeState.Windows.buffer[i].prev_workspace_window = (u16) cw;
 					}
-					SetActiveWindow(hwnd);
 				}
+				SetForegroundWindow(hwnd);
 			}
 		} else {
 			for (i32 i = 0; i < breezeState.Windows.buffer_alloc_pos; i += 1) {
